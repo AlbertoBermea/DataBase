@@ -1,0 +1,82 @@
+create table Profesor(
+	Nomina CHAR(10) NOT NULL,
+	Nombre VARCHAR(100),
+	Foto VARCHAR(200),
+	FechaContratacion DATE,
+	TipoContrato VARCHAR(20),
+	TOEFL INT,
+	CapCuidadania CHAR(1),
+	CapEtica CHAR(1),
+	CapIngles CHAR(1),
+	Email VARCHAR(50),
+	TelefonoPersonal VARCHAR(15),
+	TelefonoOficina VARCHAR(15),
+	Oficina VARCHAR(10),
+	LugarDeTrabajo VARCHAR(50),
+	FechaConTrabajoExt DATE,
+	Carrera VARCHAR(50),
+	FechaObtCarrera DATE,
+	Maestria VARCHAR(50),
+	FechaObtMaestria DATE,
+	Doctorado VARCHAR(50),
+	FechaObtDoctorado DATE,
+	CCTR VARCHAR(50),
+	PRIMARY KEY(Nomina)
+);
+
+CREATE TABLE Cursos(
+	Clave VARCHAR(8) NOT NULL,
+	Nombre VARCHAR(100),
+	Departamento VARCHAR(20),	
+	PRIMARY KEY (clave)
+);
+
+CREATE TABLE Horarios ( 
+	Id INT, 
+	Horario Varchar(15) , 
+	Dia varchar(3), 
+	Hora varchar(12), 
+	Segmento varchar(15), 
+	PRIMARY key (id) 
+);
+
+CREATE TABLE CursosAsignados(
+	Id INT,
+	NumeroDeGrupo INT,
+	ClaveCurso VARCHAR(8),
+	NominaProfe CHAR(10),
+	IdHorario INT,
+	CRN CHAR(5),
+	SemestreInicia VARCHAR(15),
+	SemestreTermina VARCHAR(15),
+	AnioSemestre VARCHAR(20),
+	CursoTerminal VARCHAR(50),
+	Idioma VARCHAR(15),
+	Atributos VARCHAR(30),
+	Poblacion INT,
+	Ecoa5 INT,
+	Ecoa6 INT,
+	Ecoa7 INT,	
+	PRIMARY KEY (Id),
+    	FOREIGN KEY (NominaProfe) REFERENCES profesor(Nomina),
+	FOREIGN KEY (IdHorario) REFERENCES horarios(Id),
+	FOREIGN KEY (ClaveCurso) REFERENCES Cursos(Clave)
+);
+
+CREATE TABLE PuedeImpartir(
+	Id INT,
+	ClaveCurso VARCHAR(8),
+	NominaProfe CHAR(10),
+	PRIMARY KEY (Id),
+    	FOREIGN KEY (NominaProfe) REFERENCES profesor(Nomina),
+	FOREIGN KEY (ClaveCurso) REFERENCES Cursos(Clave)
+);
+
+CREATE TABLE PrefiereImpartir(
+	Id INT,
+	ClaveCurso VARCHAR(8),
+	NominaProfe CHAR(10),	
+	PRIMARY KEY (Id),
+    	FOREIGN KEY (NominaProfe) REFERENCES profesor(Nomina),
+	FOREIGN KEY (ClaveCurso) REFERENCES Cursos(Clave)
+);
