@@ -1,0 +1,73 @@
+INSERT INTO profesor (nomina, nombre)
+SELECT DISTINCT profesorid, nombreprofe
+FROM tablaprofescursos;
+
+INSERT INTO cursos (clave, departamento, nombre) 
+SELECT aveMateria,'Ciencias Computacionales',NombreMateria
+FROM tablamaterias;
+
+INSERT INTO horarios(id,Horario,Segmento)
+SELECT id,Horario,Segmento
+FROM tablahorarios;
+
+INSERT INTO cursosasignados(ClaveCurso,NumeroDeGrupo,CRN,IdHorario,NominaProfe,Poblacion,id,aniosemestre,SemestreInicia,SemestreTermina) 
+SELECT  cursos.Clave,Grupo,CRN,horarios.id,profesor.Nomina,Poblacion,ClaseId,AnioSemestre,SemestrInicia,SemestreTermina
+FROM tablaprofescursos join cursos on tablaprofescursos.Clave=cursos.clave join profesor on nomina=profesorid join horarios on id=tablaprofescursos.Horario;
+
+
+INSERT INTO cursos VALUES ('TC2008','Sistemas Operativos','Ciencias Computacionales');
+INSERT INTO cursos VALUES ('TC2029','Programacion de Aplicaciones para dispositivos iOS','Ciencias Computacionales');
+INSERT INTO cursos VALUES ('TC3007','Proyecto integrador de tecnologias computacionales','Ciencias Computacionales');
+INSERT INTO cursos VALUES ('TC3012','Administracion de servidores','Ciencias Computacionales');
+INSERT INTO cursos VALUES ('TC3018','Redes IP para pequena y mediana empresa','Ciencias Computacionales');
+INSERT INTO cursos VALUES ('TC3024','Ciencias Computacionales','Modelado y animacion');
+INSERT INTO cursos VALUES ('TC3046','Redes avanzadas','Ciencias Computacionales');
+INSERT INTO cursos VALUES ('TC3055','Seguridad informatica avanzada','Ciencias Computacionales');
+INSERT INTO cursos VALUES ('TI3030','Administracion de la informacion','Administracion de Sistemas de Informacion');
+
+INSERT INTO puedeimpartir VALUES(1,'TC1019',41);
+INSERT INTO puedeimpartir VALUES(2,'TC2004',41);
+INSERT INTO puedeimpartir VALUES(3,'TC2008',41);
+INSERT INTO puedeimpartir VALUES(4,'TC3012',41);
+
+INSERT INTO prefiereimpartir Values(1,'TC1020',41);
+INSERT INTO prefiereimpartir Values(2,'TI3030',41);
+
+ALTER TABLE `horarios` CHANGE `Id` `Id` INT;
+ALTER TABLE `cursosasignados` CHANGE `Id` `Id` INT;
+ALTER TABLE `puedeimpartir` CHANGE `Id` `Id` INT;
+ALTER TABLE `prefiereimpartir` CHANGE `Id` `Id` INT;
+
+ALTER TABLE cursosasignados
+ADD `5` INT;
+ALTER TABLE cursosasignados
+ADD `6` INT;
+ALTER TABLE cursosasignados
+ADD `7` INT;
+
+ALTER TABLE profesor
+ADD `Carrera` VARCHAR(50);
+ALTER TABLE profesor
+ADD `FechaObtCarrera` DATE;
+ALTER TABLE profesor
+ADD `Maestria` VARCHAR(50);
+ALTER TABLE profesor
+ADD `FechaObtMaestria` DATE;
+ALTER TABLE profesor
+ADD `Doctorado` VARCHAR(50);
+ALTER TABLE profesor
+ADD `FechaObtDoctorado` DATE;
+
+UPDATE profesor SET CapCiudadania = 'Y' 
+WHERE Nomina = 41;
+UPDATE profesor SET CapEtica = 'Y' 
+WHERE Nomina = 41;
+UPDATE profesor SET CapIngles = 'Y' 
+WHERE Nomina = 41;
+
+ALTER TABLE `cursosasignados` CHANGE `5` `Ecoa5` INT;
+ALTER TABLE `cursosasignados` CHANGE `6` `Ecoa6` INT;
+ALTER TABLE `cursosasignados` CHANGE `7` `Ecoa7` INT;
+
+UPDATE cursosasignados SET ecoa5=RAND()*(10-6)+6, Ecoa6 = RAND()*(10-6)+6, Ecoa7 = RAND()*(10-6)+6
+WHERE NominaProfe = 41
