@@ -1,0 +1,1722 @@
+﻿-- phpMyAdmin SQL Dump
+-- version 4.7.4
+-- https://www.phpmyadmin.net/
+--
+-- Servidor: 127.0.0.1
+-- Tiempo de generación: 03-12-2017 a las 00:26:56
+-- Versión del servidor: 10.1.28-MariaDB
+-- Versión de PHP: 7.1.10
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+SET AUTOCOMMIT = 0;
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Base de datos: `profesores_cursos`
+--
+
+DELIMITER $$
+--
+-- Procedimientos
+--
+CREATE DEFINER=`root`@`localhost` PROCEDURE `SP_AlumnosTotalesEnXSemestre` (IN `var1` INT, IN `var2` INT, IN `var3` INT)  NO SQL
+SELECT SUM(poblacion) as 'Alumnos Totales'
+FROM cursosasignados
+WHERE var1 >= semestreinicia AND var2 <= semestretermina AND  var3 = AnioSemestre$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `SP_AlumnosTotales_Actuales` ()  NO SQL
+SELECT sum(poblacion) as `Alumnos`
+from cursosasignados 
+where month(now()) >= semestreinicia  and month(now()) <= semestretermina and  year(now()) = AnioSemestre$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `SP_AlumnosTotales_Historial` ()  NO SQL
+SELECT SUM(poblacion) AS `Alumnos`
+FROM cursosasignados$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `SP_CuantosAlumnosLlevanUnaMateria` (IN `variable` VARCHAR(10))  NO SQL
+SELECT sum(poblacion) AS `Alumnos`
+FROM cursosasignados
+WHERE clavecurso LIKE CONCAT('%',variable,'%') AND MONTH(NOW()) >= semestreinicia  AND MONTH(now()) <= semestretermina AND  YEAR(NOW()) = AnioSemestre$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `SP_CuantosGruposEnXSemestre` (IN `var1` INT, IN `var2` INT, IN `var3` INT)  NO SQL
+SELECT clavecurso AS 'Clave', cursos.Nombre AS 'Nombre de la Materia', COUNT(clavecurso) AS 'Grupos Totales', SUM(poblacion) AS 'Alumnos Totales'
+from cursosasignados JOIN cursos ON clavecurso = clave
+WHERE var1 >= semestreinicia  AND var2 <= semestretermina AND var3 = AnioSemestre
+GROUP BY clavecurso, cursos.Nombre
+HAVING SUM(poblacion) > 0
+ORDER BY SUM(poblacion)  DESC$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `SP_DatosDeLosGrupos` (IN `variable` VARCHAR(10))  NO SQL
+SELECT profesor.Nombre `Nombre del Profesor`, horarios.Horario, CRN,Poblacion AS `Alumnos`
+FROM cursosasignados JOIN cursos ON ClaveCurso = Clave JOIN horarios ON  cursosasignados.IdHorario = horarios.id JOIN profesor ON cursosasignados.NominaProfe = profesor.Nomina
+WHERE clavecurso LIKE CONCAT('%',variable,'%') AND MONTH(NOW()) >= semestreinicia  AND MONTH(NOW()) <= semestretermina AND YEAR(NOW()) = AnioSemestre
+ORDER BY Poblacion DESC$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `SP_DatosDeUnaMateria` (IN `variable` VARCHAR(10))  NO SQL
+SELECT Clave, cursos.Nombre
+FROM cursos
+WHERE clave LIKE CONCAT('%',variable,'%')$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `SP_DatosProfesor` (IN `variable` VARCHAR(50))  NO SQL
+SELECT * 
+FROM profesor
+WHERE nomina = variable$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `SP_Ecoas` (IN `variable` VARCHAR(20))  NO SQL
+SELECT ROUND(avg(ecoa5),2) AS 'Nivel De Reto Intelectual', STD(ecoa5) AS 'Desviacion Estandar', ROUND(avg(ecoa6),2) AS 'Guia Del Apredizaje', STD(ecoa6) AS 'Desviacion Estandar2', ROUND(avg(ecoa7),2) AS 'Nivel De Recomendacion', STD(ecoa7) AS 'Desviacion Estandar3'
+FROM cursosasignados
+WHERE nominaprofe = variable$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `SP_GuiaDeAprendizaje` (IN `variable` VARCHAR(20))  NO SQL
+SELECT ROUND(AVG(Ecoa6),2) AS 'Promedio', ROUND(STD(ecoa6),2) AS 'Desviacion Estandar', MAX(ecoa6) AS 'Maximo', MIN(ecoa6) AS 'Minimo'
+FROM cursosasignados
+WHERE nominaprofe = variable$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `SP_MateriasDeXSemestre` (IN `variable` INT, IN `var2` INT, IN `var3` INT)  NO SQL
+SELECT clavecurso AS 'Clave',cursos.Nombre AS 'Nombre de la Materia', profesor.Nombre `Nombre del Profesor`, horarios.Horario, CRN,Poblacion as `Alumnos`
+FROM cursosasignados JOIN cursos ON ClaveCurso = Clave JOIN horarios ON  cursosasignados.IdHorario = horarios.id JOIN profesor ON cursosasignados.NominaProfe = profesor.Nomina
+WHERE variable >= semestreinicia  AND var2 <= semestretermina AND  var3 = AnioSemestre AND poblacion > 0
+ORDER BY poblacion DESC$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `SP_MateriasQueDaUnProfesorActualmente` (IN `variable` VARCHAR(10))  NO SQL
+SELECT cursosasignados.ClaveCurso AS 'Clave',cursos.Nombre AS Curso ,horarios.Horario,cursosasignados.Poblacion,cursosasignados.CRN
+FROM cursosasignados JOIN cursos ON ClaveCurso = Clave JOIN horarios ON  cursosasignados.IdHorario = horarios.id JOIN profesor ON cursosasignados.NominaProfe = profesor.Nomina
+WHERE profesor.nomina = variable  AND MONTH(NOW()) >= semestreinicia  AND MONTH(NOW()) <= semestretermina AND  YEAR(NOW()) = AnioSemestre
+ORDER BY profesor.nomina ASC$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `SP_MateriasQueHaDadoUnProfesor` (IN `variable` VARCHAR(20))  NO SQL
+SELECT cursosasignados.ClaveCurso AS 'Clave',cursos.Nombre AS Curso ,horarios.Horario,cursosasignados.Poblacion,cursosasignados.CRN, semestreinicia AS 'Inicio Semestre',semestretermina AS 'Termino de Semestre',aniosemestre AS 'Año', Ecoa5, Ecoa6, Ecoa7
+FROM cursosasignados JOIN cursos ON ClaveCurso = Clave JOIN horarios ON  cursosasignados.IdHorario = horarios.id JOIN profesor ON cursosasignados.NominaProfe = profesor.Nomina
+WHERE profesor.nomina = variable 
+ORDER BY profesor.nomina ASC$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `SP_NivelDeRetoIntelectual` (IN `variable` VARCHAR(20))  NO SQL
+SELECT ROUND(AVG(Ecoa5),2) AS 'Promedio', ROUND(STD(ecoa5),2) AS 'Desviacion Estandar', MAX(ecoa5) AS 'Maximo', MIN(ecoa5) AS 'Minimo'
+FROM cursosasignados
+WHERE nominaprofe = variable$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `SP_PrefiereDar` (IN `variable` VARCHAR(20))  NO SQL
+SELECT clavecurso AS 'Clave', cursos.Nombre
+FROM prefiereimpartir JOIN cursos ON prefiereimpartir.clavecurso = cursos.clave
+WHERE nominaprofe = variable$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `SP_ProfesorInspirador` (IN `variable` VARCHAR(20))  NO SQL
+SELECT ROUND(AVG(ecoa5+ecoa6+ecoa7)/3 , 2) AS 'Promedio'
+FROM cursosasignados
+WHERE nominaprofe = variable$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `SP_PuedeDar` (IN `variable` VARCHAR(20))  NO SQL
+SELECT clavecurso AS 'Clave', cursos.Nombre
+FROM puedeimpartir JOIN cursos ON puedeimpartir.clavecurso = cursos.clave
+WHERE nominaprofe = variable$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `SP_RecomendacionDelProfesor` (IN `variable` VARCHAR(20))  NO SQL
+SELECT ROUND(AVG(Ecoa7),2) AS 'Promedio', ROUND(STD(ecoa7),2) AS 'Desviacion Estandar', MAX(ecoa7) AS 'Maximo', MIN(ecoa7) AS 'Minimo'
+FROM cursosasignados
+WHERE nominaprofe = variable$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `SP_TodasLasMateriasConAlumnosTotales_Actuales` ()  NO SQL
+SELECT clavecurso as `Clave Del Curso`,cursos.Nombre,COUNT(cursos.Nombre) as `Grupos Totales`, SUM(poblacion) as `Alumnos`
+FROM cursosasignados JOIN cursos on clavecurso = clave 
+WHERE month(now()) >= semestreinicia  and month(now()) <= semestretermina and  year(now()) = AnioSemestre
+GROUP BY cursos.Nombre
+HAVING  SUM(poblacion) > 0
+ORDER BY clavecurso$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `SP_TodasLasMateriasConAlumnosTotales_Historial` ()  NO SQL
+SELECT clavecurso AS `Clave Del Curso`,cursos.Nombre,COUNT(cursos.Nombre) AS `Grupos Totales`, SUM(poblacion) AS `Alumnos`
+FROM cursosasignados JOIN cursos ON clavecurso = clave 
+GROUP BY cursos.Nombre
+HAVING  SUM(poblacion) > 0
+ORDER BY SUM(poblacion) DESC$$
+
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `app_campo_procedimiento`
+--
+
+CREATE TABLE `app_campo_procedimiento` (
+  `id` int(6) UNSIGNED NOT NULL,
+  `titulo` varchar(250) NOT NULL,
+  `id_proc` int(6) NOT NULL,
+  `tipo` varchar(250) DEFAULT NULL,
+  `orden` int(6) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Volcado de datos para la tabla `app_campo_procedimiento`
+--
+
+INSERT INTO `app_campo_procedimiento` (`id`, `titulo`, `id_proc`, `tipo`, `orden`) VALUES
+(1, 'Letrero', 2, 'number', 0),
+(2, 'Letrero', 3, 'text', 0),
+(3, 'Letrero', 4, 'text', 0),
+(4, 'Letrero', 5, 'text', 0),
+(5, 'Letrero', 6, 'text', 0),
+(6, 'Letrero', 8, 'text', 0),
+(7, 'Letrero', 11, 'text', 0),
+(8, 'Letrero', 12, 'text', 0),
+(9, 'Letrero', 13, 'text', 0),
+(10, 'Letrero', 14, 'text', 0),
+(16, 'Nombre Profe ese', 15, 'text', 0),
+(17, 'Clave alv', 15, 'text', 1),
+(18, 'Nombre profe', 16, 'text', 0),
+(19, 'Letrero', 18, 'text', 0),
+(20, 'Letrero', 18, 'text', 1),
+(21, 'Letrero', 19, 'text', 0),
+(22, 'Letrero', 20, 'text', 0),
+(23, 'Letrero', 21, 'text', 0),
+(24, 'Letrero', 22, 'text', 0),
+(25, 'Letrero', 23, 'text', 0),
+(26, 'Letrero', 26, 'text', 0),
+(27, 'Letrero', 27, 'text', 0),
+(28, 'Letrero', 28, 'text', 0),
+(29, 'Letrero', 29, 'text', 0),
+(30, 'Letrero', 30, 'text', 0),
+(36, 'Letrero', 31, 'text', 0),
+(37, 'Letrero', 34, 'text', 0),
+(38, 'Letrero', 62, 'text', 0),
+(39, 'Letrero', 37, 'text', 0),
+(40, 'Letrero', 37, 'text', 1),
+(41, 'Letrero', 39, 'text', 0),
+(42, 'Letrero', 40, 'text', 0),
+(43, 'Letrero', 41, 'text', 0),
+(44, 'Letrero', 42, 'text', 0),
+(45, 'Letrero', 43, 'text', 0),
+(46, 'Letrero', 44, 'text', 0),
+(47, 'Letrero', 45, 'text', 0),
+(48, 'Letrero', 49, 'text', 0),
+(49, 'Letrero', 50, 'text', 0),
+(51, 'Letrero', 52, 'text', 0),
+(52, 'Letrero', 53, 'text', 0),
+(54, 'Letrero', 55, 'text', 0),
+(55, 'Letrero', 56, 'text', 0),
+(56, 'Letrero', 57, 'text', 0),
+(57, 'Letrero', 58, 'text', 0),
+(58, 'Letrero', 59, 'text', 0),
+(59, 'Letrero', 60, 'text', 0),
+(61, 'Letrero', 64, 'text', 0),
+(62, 'Letrero', 61, 'text', 0),
+(63, 'Nombre del Profesor', 65, 'text', 0),
+(67, 'Letrero', 66, 'number', 0),
+(68, 'Letrero', 66, 'number', 1),
+(69, 'Letrero', 66, 'number', 2),
+(70, 'Letrero', 67, 'number', 0),
+(71, 'Letrero', 67, 'number', 1),
+(72, 'Letrero', 67, 'number', 2),
+(73, 'Letrero', 68, 'number', 0),
+(74, 'Letrero', 68, 'number', 1),
+(75, 'Letrero', 68, 'number', 2),
+(76, 'Letrero', 69, 'text', 0),
+(77, 'Letrero', 71, 'text', 0),
+(78, 'Letrero', 70, 'text', 0),
+(79, 'Letrero', 83, 'text', 0),
+(80, 'Letrero', 84, 'text', 0),
+(81, 'Letrero', 85, 'text', 0),
+(82, 'Letrero', 86, 'text', 0),
+(83, 'Nomina', 87, 'text', 0),
+(84, 'Letrero', 88, 'text', 0),
+(85, 'Letrero', 89, 'text', 0),
+(86, 'Letrero', 90, 'text', 0),
+(87, 'Letrero', 91, 'text', 0),
+(88, 'Letrero', 92, 'text', 0),
+(89, 'Letrero', 51, 'text', 0),
+(90, 'Letrero', 54, 'text', 0),
+(91, 'Letrero', 93, 'text', 0);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `app_campo_reporte`
+--
+
+CREATE TABLE `app_campo_reporte` (
+  `id` int(6) UNSIGNED NOT NULL,
+  `titulo` varchar(250) NOT NULL,
+  `id_reporte` int(6) NOT NULL,
+  `tipo` varchar(250) DEFAULT NULL,
+  `orden` int(6) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Volcado de datos para la tabla `app_campo_reporte`
+--
+
+INSERT INTO `app_campo_reporte` (`id`, `titulo`, `id_reporte`, `tipo`, `orden`) VALUES
+(30, 'Nomina De Profesor', 17, 'text', 0),
+(31, 'Inicio Semestre (1 u 8)', 14, 'text', 0),
+(32, 'Año Semestre', 14, 'text', 2),
+(33, 'Termino Semestre (5 o 12)', 14, 'text', 1),
+(34, 'Nomina', 15, 'text', 0),
+(35, 'Clave De La Materia', 13, 'text', 0);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `app_procedimiento`
+--
+
+CREATE TABLE `app_procedimiento` (
+  `id` int(6) UNSIGNED NOT NULL,
+  `nombre_procedimiento` varchar(250) NOT NULL,
+  `titulo` varchar(250) DEFAULT NULL,
+  `show_on_app` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Volcado de datos para la tabla `app_procedimiento`
+--
+
+INSERT INTO `app_procedimiento` (`id`, `nombre_procedimiento`, `titulo`, `show_on_app`) VALUES
+(51, 'SP_CuantosAlumnosLlevanUnaMateria', 'Alumnos Totales Cursando', 1),
+(54, 'SP_DatosDeUnaMateria', 'Datos Generales', 1),
+(55, 'SP_DatosProfesor', 'Datos Generales', 1),
+(66, 'SP_AlumnosTotalesEnXSemestre', 'Alumnos Totales', 1),
+(67, 'SP_CuantosGruposEnXSemestre', 'Datos Generales De Los Grupos', 1),
+(68, 'SP_MateriasDeXSemestre', 'Materias En Este Semestre', 1),
+(70, 'SP_MateriasQueHaDadoUnProfesor', 'Materias Que Ha Dado', 1),
+(71, 'SP_MateriasQueDaUnProfesorActualmente', 'Materias Que Da Actualmente', 1),
+(78, 'SP_AlumnosTotales_Actuales', 'SP_AlumnosTotales_Actuales', 1),
+(80, 'SP_TodasLasMateriasConAlumnosTotales_Actuales', 'SP_TodasLasMateriasConAlumnosTotales_Actuales', 1),
+(81, 'SP_AlumnosTotales_Historial', 'Total De Alumnos', 1),
+(82, 'SP_TodasLasMateriasConAlumnosTotales_Historial', 'Materias Con Historial De Alumnos', 1),
+(86, 'SP_ProfesorInspirador', 'Nivel De Profesor Inspirador', 1),
+(87, 'SP_Ecoas', 'SP_Ecoas', 1),
+(88, 'SP_GuiaDeAprendizaje', 'Nivel De Guia De Aprendizaje', 1),
+(89, 'SP_NivelDeRetoIntelectual', 'Nivel De Reto Intelectual', 1),
+(90, 'SP_RecomendacionDelProfesor', 'Nivel De Recomendacion Del Profesor', 1),
+(91, 'SP_PrefiereDar', 'Materias Que Prefiere Dar', 1),
+(92, 'SP_PuedeDar', 'Materias Que Puede Dar', 1),
+(93, 'SP_DatosDeLosGrupos', 'Grupos Actuales', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `app_reporte`
+--
+
+CREATE TABLE `app_reporte` (
+  `id` int(6) UNSIGNED NOT NULL,
+  `nombre_reporte` varchar(250) NOT NULL,
+  `titulo` varchar(250) DEFAULT NULL,
+  `show_on_app` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Volcado de datos para la tabla `app_reporte`
+--
+
+INSERT INTO `app_reporte` (`id`, `nombre_reporte`, `titulo`, `show_on_app`) VALUES
+(13, 'Materias Actuales', 'Materias Actuales', 1),
+(14, 'Datos De Materia En X Semestre', 'Datos De Materia En X Semestre', 1),
+(15, 'Datos De Un Profesor', 'Datos De Un Profesor', 1),
+(16, 'Alumnos Historial', 'Alumnos Historial', 1),
+(17, 'Profesor Inspirador', 'Profesor Inspirador', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `app_reporte_procedimiento`
+--
+
+CREATE TABLE `app_reporte_procedimiento` (
+  `id` int(6) UNSIGNED NOT NULL,
+  `id_reporte` int(6) NOT NULL,
+  `id_proc` int(6) NOT NULL,
+  `orden` int(6) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Volcado de datos para la tabla `app_reporte_procedimiento`
+--
+
+INSERT INTO `app_reporte_procedimiento` (`id`, `id_reporte`, `id_proc`, `orden`) VALUES
+(71, 14, 66, 0),
+(72, 14, 67, 2),
+(73, 14, 68, 1),
+(86, 16, 81, 0),
+(87, 16, 82, 1),
+(127, 17, 86, 0),
+(128, 17, 89, 1),
+(129, 17, 88, 2),
+(130, 17, 90, 3),
+(131, 17, 70, 4),
+(137, 15, 92, 3),
+(138, 15, 91, 4),
+(139, 15, 55, 0),
+(140, 15, 71, 1),
+(141, 15, 70, 2),
+(148, 13, 54, 0),
+(149, 13, 93, 1),
+(150, 13, 51, 2);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `app_tabla`
+--
+
+CREATE TABLE `app_tabla` (
+  `id` int(6) UNSIGNED NOT NULL,
+  `nombre_tabla` varchar(250) NOT NULL,
+  `titulo` varchar(250) DEFAULT NULL,
+  `sp` varchar(50) DEFAULT NULL,
+  `show_on_app` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Volcado de datos para la tabla `app_tabla`
+--
+
+INSERT INTO `app_tabla` (`id`, `nombre_tabla`, `titulo`, `sp`, `show_on_app`) VALUES
+(1, 'app_reporte', 'app_reporte', 'select * from profesores_cursos.`app_reporte`;', 1),
+(2, 'app_tabla', 'app_tabla', 'select * from profesores_cursos.`app_tabla`;', 1),
+(3, 'cursos', 'cursos', 'select * from profesores_cursos.`cursos`;', 1),
+(4, 'horarios', 'horarios', 'select * from profesores_cursos.`horarios`;', 1),
+(5, 'profesor', 'profesor', 'select * from profesores_cursos.`profesor`;', 1),
+(8, 'tablahorarios', 'tablahorarios', 'select * from profesores_cursos.`tablahorarios`;', 1),
+(9, 'tablaprofescursos', 'tablaprofescursos', 'select * from profesores_cursos.`tablaprofescursos', 1),
+(10, 'app_campo_procedimiento', 'app_campo_procedimiento', 'select * from profesores_cursos.`app_campo_procedi', 1),
+(11, 'app_campo_reporte', 'app_campo_reporte', 'select * from profesores_cursos.`app_campo_reporte', 1),
+(12, 'app_procedimiento', 'app_procedimiento', 'select * from profesores_cursos.`app_procedimiento', 1),
+(13, 'app_reporte_procedimiento', 'app_reporte_procedimiento', 'select * from profesores_cursos.`app_reporte_proce', 1),
+(16, 'cursosasignados', 'cursosasignados', 'select * from profesores_cursos.`cursosasignados`;', 1),
+(17, 'prefiereimpartir', 'prefiereimpartir', 'select * from profesores_cursos.`prefiereimpartir`', 1),
+(18, 'puedeimpartir', 'puedeimpartir', 'select * from profesores_cursos.`puedeimpartir`;', 1),
+(19, 'tablamaterias', 'tablamaterias', 'select * from profesores_cursos.`tablamaterias`;', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `cursos`
+--
+
+CREATE TABLE `cursos` (
+  `Clave` varchar(8) NOT NULL DEFAULT 'NOT NULL',
+  `Nombre` varchar(100) DEFAULT NULL,
+  `Departamento` varchar(50) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Volcado de datos para la tabla `cursos`
+--
+
+INSERT INTO `cursos` (`Clave`, `Nombre`, `Departamento`) VALUES
+('TC1001', 'Introduccion a la computacion', 'Ciencias Computacionales'),
+('TC1003', 'Matematicas discretas', 'Ciencias Computacionales'),
+('TC1014', 'Fundamentos de programacion\r\n', 'Ciencias Computacionales'),
+('TC1015', 'Fundamentos de diseno interactivo\r\n\r\n', 'Ciencias Computacionales'),
+('TC1016', 'Organizacion computacional\r\n\r\n\r\n', 'Ciencias Computacionales'),
+('TC1017', 'Solucion de problemas con programacion\r\n\r\n', 'Ciencias Computacionales'),
+('TC1018', 'Estructura de datos\r\n\r\n\r\n', 'Ciencias Computacionales'),
+('TC1019', 'Fundamentos de ingenieria de software\r\n', 'Ciencias Computacionales'),
+('TC1020', 'Bases de datos\r\n', 'Ciencias Computacionales'),
+('TC1021', 'Proyecto de desarrollo de videojuegos\r\n\r\n', 'Ciencias Computacionales'),
+('TC1022', 'Introduccion a la ingenieria en tecnologias computacionales', 'Ciencias Computacionales'),
+('TC1025', 'Tecnologias de la informacion y la edicion\r\n\r\n', 'Ciencias Computacionales'),
+('TC1026', 'Introduccion a la ingenieria en tecnologias de informacion', 'Ciencias Computacionales'),
+('TC2004', 'Analisis y modelacion de sistemas de software\r\n\r\n\r\n', 'Ciencias Computacionales'),
+('TC2006', 'Lenguajes de programacion\r\n\r\n', 'Ciencias Computacionales'),
+('TC2007', 'Metodos cuantitativos y simulacion\r\n\r\n', 'Ciencias Computacionales'),
+('TC2008', 'Sistemas Operativos', 'Ciencias Computacionales'),
+('TC2009', 'Uso y administracion de sistemas operativos\r\n\r\n', 'Ciencias Computacionales'),
+('TC2011', 'Sistemas inteligentes\r\n\r\n\r\n', 'Ciencias Computacionales'),
+('TC2016', 'Programacion orientada a objetos\r\n\r\n', 'Ciencias Computacionales'),
+('TC2017', 'Analisis y diseno de algoritmos\r\n\r\n', 'Ciencias Computacionales'),
+('TC2018', 'Fundamentos de redes\r\n\r\n\r\n', 'Ciencias Computacionales'),
+('TC2019', 'Metodos numericos en ingenieria\r\n\r\n', 'Ciencias Computacionales'),
+('TC2020', 'Matematicas computacionales\r\n\r\n\r\n', 'Ciencias Computacionales'),
+('TC2022', 'Interconexion de redes\r\n\r\n', 'Ciencias Computacionales'),
+('TC2024', 'Proyectos de desarrollo para dispositivos moviles\r\n', 'Ciencias Computacionales'),
+('TC2025', 'Programacion avanzada\r\n\r\n', 'Ciencias Computacionales'),
+('TC2026', 'Desarrollo de aplicaciones web\r\n\r\n', 'Ciencias Computacionales'),
+('TC2027', 'Seguridad informatica\r\n\r\n', 'Ciencias Computacionales'),
+('TC2028', 'Lenguajes y traductores\r\n\r\n', 'Ciencias Computacionales'),
+('TC2029', 'Programacion de Aplicaciones para dispositivos iOS', 'Ciencias Computacionales'),
+('TC3002', 'Administracion de proyectos de ingenieria de software', 'Ciencias Computacionales'),
+('TC3007', 'Proyecto integrador de tecnologias computacionales', 'Ciencias Computacionales'),
+('TC3012', 'Administracion de servidores', 'Ciencias Computacionales'),
+('TC3018', 'Redes IP para pequena y mediana empresa ', 'Ciencias Computacionales'),
+('TC3020', 'Aprendizaje automatico\r\n\r\n', 'Ciencias Computacionales'),
+('TC3021', 'Desarrollo de videojuegos\r\n\r\n', 'Ciencias Computacionales'),
+('TC3022', 'Graficas computacionales\r\n\r\n', 'Ciencias Computacionales'),
+('TC3023', 'Inteligencia computacional\r\n\r\n', 'Ciencias Computacionales'),
+('TC3024', 'Modelado y animacion', 'Ciencias Computacionales'),
+('TC3025', 'Sistemas multiagentes\r\n\r\n', 'Ciencias Computacionales'),
+('TC3028', 'Interfaces fisicas\r\n\r\n', 'Ciencias Computacionales'),
+('TC3029', 'Seguridad, respaldo, recuperacion y archivado de la informacion\r\n', 'Ciencias Computacionales'),
+('TC3041', 'Bases de datos avanzadas\r\n\r\n', 'Ciencias Computacionales'),
+('TC3045', 'Calidad y pruebas de software\r\n\r\n', 'Ciencias Computacionales'),
+('TC3046', 'Redes avanzadas', 'Ciencias Computacionales'),
+('TC3047', 'Administracion de servidores\r\n\r\n', 'Ciencias Computacionales'),
+('TC3048', 'Diseno de compiladores\r\n\r\n', 'Ciencias Computacionales'),
+('TC3049', 'Diseno y arquitectura de software\r\n\r\n', 'Ciencias Computacionales'),
+('TC3050', 'Vision para robots\r\n\r\n', 'Ciencias Computacionales'),
+('TC3051', 'Arquitecturas empresariales de tecnologías de informacion', 'Ciencias Computacionales'),
+('TC3052', 'Laboratorio de desarrollo de aplicaciones Web\r\n\r\n', 'Ciencias Computacionales'),
+('TC3053', 'Proyecto integrador de arquitectura de tecnologias de la informacion', 'Ciencias Computacionales'),
+('TC3054', 'Proyecto integrador para el desarrollo de soluciones empresariales', 'Ciencias Computacionales'),
+('TC3055', 'Seguridad informatica avanzada', 'Ciencias Computacionales'),
+('TC3060', 'Modelos y analisis de redes sociales\r\n\r\n', 'Ciencias Computacionales'),
+('TC3061', 'Desarrollo de aplicaciones en Android\r\n\r\n\r\n', 'Ciencias Computacionales'),
+('TC3063', 'Analisis y ciencia de grandes volumenes de datos\r\n', 'Ciencias Computacionales'),
+('TI3030', 'Administracion de la informacion', 'Administracion de Sistemas de Informacion');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `cursosasignados`
+--
+
+CREATE TABLE `cursosasignados` (
+  `Id` int(11) NOT NULL,
+  `NumeroDeGrupo` int(11) DEFAULT NULL,
+  `ClaveCurso` varchar(8) DEFAULT NULL,
+  `NominaProfe` char(10) DEFAULT NULL,
+  `IdHorario` int(11) DEFAULT NULL,
+  `CRN` char(5) DEFAULT NULL,
+  `SemestreInicia` varchar(15) DEFAULT NULL,
+  `SemestreTermina` varchar(15) DEFAULT NULL,
+  `AnioSemestre` varchar(20) DEFAULT NULL,
+  `CursoTerminal` varchar(50) DEFAULT NULL,
+  `Idioma` varchar(15) DEFAULT NULL,
+  `Atributos` varchar(30) DEFAULT NULL,
+  `Poblacion` int(11) DEFAULT NULL,
+  `Ecoa5` int(11) DEFAULT NULL,
+  `Ecoa6` int(11) DEFAULT NULL,
+  `Ecoa7` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Volcado de datos para la tabla `cursosasignados`
+--
+
+INSERT INTO `cursosasignados` (`Id`, `NumeroDeGrupo`, `ClaveCurso`, `NominaProfe`, `IdHorario`, `CRN`, `SemestreInicia`, `SemestreTermina`, `AnioSemestre`, `CursoTerminal`, `Idioma`, `Atributos`, `Poblacion`, `Ecoa5`, `Ecoa6`, `Ecoa7`) VALUES
+(1, 1, 'TC1001', '44', 6, '25586', '8', '12', '2017', NULL, NULL, NULL, 32, 9, 9, 7),
+(2, 10, 'TC1001', '54', 4, '22324', '8', '12', '2017', NULL, NULL, NULL, 32, 9, 8, 9),
+(3, 11, 'TC1001', '74', 34, '23097', '8', '12', '2017', NULL, NULL, NULL, 28, 6, 8, 8),
+(4, 12, 'TC1001', '72', 33, '25583', '8', '12', '2017', NULL, NULL, NULL, 35, 5, 7, 8),
+(5, 13, 'TC1001', '53', 33, '23222', '8', '12', '2017', NULL, NULL, NULL, 37, 5, 8, 9),
+(6, 14, 'TC1001', '19', 36, '22522', '8', '12', '2017', NULL, NULL, NULL, 30, 9, 8, 10),
+(7, 15, 'TC1001', '70', 28, '22322', '8', '12', '2017', NULL, NULL, NULL, 27, 8, 7, 6),
+(8, 16, 'TC1001', '54', 9, '25584', '8', '12', '2017', NULL, NULL, NULL, 36, 9, 9, 9),
+(9, 17, 'TC1001', '44', 34, '23236', '8', '12', '2017', NULL, NULL, NULL, 32, 6, 9, 6),
+(10, 18, 'TC1001', '72', 34, '22323', '8', '12', '2017', NULL, NULL, NULL, 31, 6, 9, 8),
+(11, 19, 'TC1001', '70', 31, '33826', '8', '12', '2017', NULL, NULL, NULL, 25, 9, 8, 9),
+(12, 2, 'TC1001', '72', 37, '25581', '8', '12', '2017', NULL, NULL, NULL, 32, 6, 7, 7),
+(13, 20, 'TC1001', '29', 26, '34012', '8', '12', '2017', NULL, NULL, NULL, 30, 9, 5, 9),
+(14, 21, 'TC1001', '29', 30, '34001', '8', '12', '2017', NULL, NULL, NULL, 10, 5, 9, 10),
+(15, 3, 'TC1001', '70', 30, '25582', '8', '12', '2017', NULL, NULL, NULL, 31, 6, 5, 8),
+(16, 4, 'TC1001', '55', 25, '23237', '8', '12', '2017', NULL, NULL, NULL, 32, 6, 9, 6),
+(17, 5, 'TC1001', '30', 14, '23220', '8', '12', '2017', NULL, NULL, NULL, 30, 8, 8, 5),
+(18, 6, 'TC1001', '50', 15, '25587', '8', '12', '2017', NULL, NULL, NULL, 38, 7, 5, 10),
+(19, 7, 'TC1001', '57', 34, '23221', '8', '12', '2017', NULL, NULL, NULL, 36, 9, 10, 8),
+(20, 8, 'TC1001', '49', 15, '22521', '8', '12', '2017', NULL, NULL, NULL, 38, 8, 8, 9),
+(21, 9, 'TC1001', '38', 33, '25585', '8', '12', '2017', NULL, NULL, NULL, 30, 7, 6, 6),
+(22, 1, 'TC1003', '1', 2, '23098', '8', '12', '2017', NULL, NULL, NULL, 26, 7, 5, 5),
+(23, 2, 'TC1003', '1', 8, '22523', '8', '12', '2017', NULL, NULL, NULL, 26, 7, 10, 6),
+(24, 3, 'TC1003', '64', 36, '23238', '8', '12', '2017', NULL, NULL, NULL, 24, 7, 5, 5),
+(25, 4, 'TC1003', '1', 36, '22105', '8', '12', '2017', NULL, NULL, NULL, 21, 6, 5, 7),
+(26, 5, 'TC1003', '34', 8, '23223', '8', '12', '2017', NULL, NULL, NULL, 26, 8, 5, 8),
+(27, 6, 'TC1003', '34', 36, '25588', '8', '12', '2017', NULL, NULL, NULL, 15, 9, 9, 8),
+(28, 10, 'TC1014', '27', 15, '22116', '8', '12', '2017', NULL, NULL, NULL, 17, 9, 8, 6),
+(29, 11, 'TC1014', '5', 19, '23224', '8', '12', '2017', NULL, NULL, NULL, 26, 9, 6, 10),
+(30, 14, 'TC1014', '44', 4, '25593', '8', '12', '2017', NULL, NULL, NULL, 27, 7, 9, 6),
+(31, 16, 'TC1014', '42', 15, '25591', '8', '12', '2017', NULL, NULL, NULL, 26, 9, 6, 9),
+(32, 2, 'TC1014', '8', 4, '23090', '8', '12', '2017', NULL, NULL, NULL, 21, 8, 8, 6),
+(33, 3, 'TC1014', '8', 15, '22524', '8', '12', '2017', NULL, NULL, NULL, 20, 5, 9, 6),
+(34, 4, 'TC1014', '6', 36, '23099', '8', '12', '2017', NULL, NULL, NULL, 25, 9, 6, 6),
+(35, 5, 'TC1014', '77', 2, '25589', '8', '12', '2017', NULL, NULL, NULL, 27, 5, 6, 7),
+(36, 6, 'TC1014', '44', 37, '25590', '8', '12', '2017', NULL, NULL, NULL, 27, 6, 7, 9),
+(37, 8, 'TC1014', '77', 6, '25592', '8', '12', '2017', NULL, NULL, NULL, 23, 7, 7, 9),
+(38, 9, 'TC1014', '6', 2, '22525', '8', '12', '2017', NULL, NULL, NULL, 27, 5, 9, 9),
+(39, 1, 'TC1015', '11', 18, '25594', '8', '12', '2017', NULL, NULL, NULL, 26, 8, 6, 8),
+(40, 2, 'TC1015', '59', 8, '22396', '8', '12', '2017', NULL, NULL, NULL, 23, 8, 7, 9),
+(41, 3, 'TC1015', '58', 37, '23091', '8', '12', '2017', NULL, NULL, NULL, 24, 5, 9, 7),
+(42, 5, 'TC1015', '16', 14, '22526', '8', '12', '2017', NULL, NULL, NULL, 33, 6, 6, 9),
+(43, 6, 'TC1015', '58', 4, '23495', '8', '12', '2017', NULL, NULL, NULL, 25, 5, 5, 9),
+(44, 1, 'TC1016', '19', 4, '23100', '8', '12', '2017', NULL, NULL, NULL, 30, 7, 6, 10),
+(45, 1080, 'TC1016', '74', 3, '22024', '8', '12', '2017', NULL, NULL, NULL, 0, 6, 10, 7),
+(46, 1800, 'TC1016', '21', 3, '22189', '8', '12', '2017', NULL, NULL, NULL, 0, 5, 6, 9),
+(47, 1801, 'TC1016', '56', 3, '22022', '8', '12', '2017', NULL, NULL, NULL, 9, 7, 7, 8),
+(48, 1802, 'TC1016', '63', 3, '22020', '8', '12', '2017', NULL, NULL, NULL, 0, 8, 8, 6),
+(49, 2, 'TC1016', '64', 2, '22109', '8', '12', '2017', NULL, NULL, NULL, 30, 10, 7, 7),
+(50, 3, 'TC1016', '64', 33, '22527', '8', '12', '2017', NULL, NULL, NULL, 22, 8, 7, 9),
+(51, 4, 'TC1016', '64', 34, '22397', '8', '12', '2017', NULL, NULL, NULL, 23, 6, 6, 6),
+(52, 1, 'TC1017', '57', 14, '22314', '8', '12', '2017', NULL, NULL, NULL, 32, 5, 9, 9),
+(53, 10, 'TC1017', '49', 19, '25600', '8', '12', '2017', NULL, NULL, NULL, 38, 9, 6, 9),
+(54, 11, 'TC1017', '49', 26, '25601', '8', '12', '2017', NULL, NULL, NULL, 36, 6, 7, 9),
+(55, 12, 'TC1017', '11', 33, '25598', '8', '12', '2017', NULL, NULL, NULL, 23, 9, 9, 8),
+(56, 13, 'TC1017', '2', 18, '23101', '8', '12', '2017', NULL, NULL, NULL, 25, 7, 7, 5),
+(57, 15, 'TC1017', '48', 9, '22315', '8', '12', '2017', NULL, NULL, NULL, 28, 8, 6, 9),
+(58, 16, 'TC1017', '75', 14, '22316', '8', '12', '2017', NULL, NULL, NULL, 32, 8, 8, 5),
+(59, 17, 'TC1017', '11', 14, '25599', '8', '12', '2017', NULL, NULL, NULL, 26, 8, 6, 8),
+(60, 18, 'TC1017', '57', 33, '23240', '8', '12', '2017', NULL, NULL, NULL, 34, 9, 6, 5),
+(61, 19, 'TC1017', '57', 37, '23226', '8', '12', '2017', NULL, NULL, NULL, 35, 6, 8, 7),
+(62, 2, 'TC1017', '7', 2, '25597', '8', '12', '2017', NULL, NULL, NULL, 27, 7, 8, 6),
+(63, 20, 'TC1017', '30', 37, '25595', '8', '12', '2017', NULL, NULL, NULL, 38, 9, 6, 5),
+(64, 3, 'TC1017', '7', 8, '25596', '8', '12', '2017', NULL, NULL, NULL, 27, 8, 8, 5),
+(65, 4, 'TC1017', '51', 27, '22529', '8', '12', '2017', NULL, NULL, NULL, 32, 9, 9, 8),
+(66, 6, 'TC1017', '52', 34, '16568', '8', '12', '2017', NULL, NULL, NULL, 34, 6, 7, 7),
+(67, 7, 'TC1017', '13', 9, '23239', '8', '12', '2017', NULL, NULL, NULL, 37, 7, 6, 7),
+(68, 8, 'TC1017', '12', 37, '23225', '8', '12', '2017', NULL, NULL, NULL, 37, 9, 7, 9),
+(69, 1, 'TC1018', '13', 8, '23102', '8', '12', '2017', NULL, NULL, NULL, 23, 7, 5, 9),
+(70, 2, 'TC1018', '13', 15, '25604', '8', '12', '2017', NULL, NULL, NULL, 33, 5, 10, 8),
+(71, 3, 'TC1018', '43', 37, '25603', '8', '12', '2017', NULL, NULL, NULL, 22, 10, 6, 5),
+(72, 4, 'TC1018', '43', 4, '25602', '8', '12', '2017', NULL, NULL, NULL, 36, 8, 9, 6),
+(73, 5, 'TC1018', '13', 34, '22117', '8', '12', '2017', NULL, NULL, NULL, 8, 6, 10, 9),
+(74, 6, 'TC1018', '43', 9, '22484', '8', '12', '2017', NULL, NULL, NULL, 35, 8, 10, 6),
+(75, 2, 'TC1019', '36', 18, '23227', '8', '12', '2017', NULL, NULL, NULL, 35, 7, 10, 9),
+(76, 3, 'TC1019', '36', 25, '23092', '8', '12', '2017', NULL, NULL, NULL, 38, 7, 5, 6),
+(77, 4, 'TC1019', '26', 2, '22485', '8', '12', '2017', NULL, NULL, NULL, 28, 8, 6, 8),
+(78, 5, 'TC1019', '73', 18, '22486', '8', '12', '2017', NULL, NULL, NULL, 35, 6, 6, 7),
+(79, 6, 'TC1019', '14', 34, '23789', '8', '12', '2017', NULL, NULL, NULL, 18, 9, 8, 9),
+(80, 1, 'TC1020', '41', 15, '23241', '8', '12', '2017', NULL, NULL, NULL, 27, 9, 9, 8),
+(81, 2, 'TC1020', '41', 26, '22398', '8', '12', '2017', NULL, NULL, NULL, 23, 8, 6, 9),
+(82, 3, 'TC1020', '36', 6, '23242', '8', '12', '2017', NULL, NULL, NULL, 24, 7, 7, 8),
+(83, 1, 'TC1021', '20', 31, '22399', '8', '12', '2017', NULL, NULL, NULL, 29, 7, 8, 9),
+(84, 2, 'TC1021', '40', 9, '22530', '8', '12', '2017', NULL, NULL, NULL, 28, 7, 7, 9),
+(85, 1, 'TC1022', '15', 9, '22118', '8', '12', '2017', NULL, NULL, NULL, 101, 9, 10, 10),
+(86, 2, 'TC1022', '10', 9, '33272', '8', '12', '2017', NULL, NULL, NULL, 21, 6, 8, 9),
+(87, 1, 'TC1025', '40', 26, '22531', '8', '12', '2017', NULL, NULL, NULL, 15, 7, 6, 9),
+(88, 1, 'TC1026', '25', 9, '23426', '8', '12', '2017', NULL, NULL, NULL, 15, 7, 9, 10),
+(89, 1, 'TC2004', '6', 6, '27718', '8', '12', '2017', NULL, NULL, NULL, 32, 5, 8, 9),
+(90, 3, 'TC2004', '73', 14, '23228', '8', '12', '2017', NULL, NULL, NULL, 34, 8, 6, 8),
+(91, 4, 'TC2004', '74', 39, '22532', '8', '12', '2017', NULL, NULL, NULL, 0, 6, 7, 6),
+(92, 5, 'TC2004', '6', 20, '23775', '8', '12', '2017', NULL, NULL, NULL, 34, 8, 6, 7),
+(93, 650, 'TC2004', '26', 39, '32783', '8', '12', '2017', NULL, NULL, NULL, 9, 7, 9, 9),
+(94, 1, 'TC2006', '71', 36, '25608', '8', '12', '2017', NULL, NULL, NULL, 36, 9, 6, 10),
+(95, 2, 'TC2006', '31', 9, '25609', '8', '12', '2017', NULL, NULL, NULL, 36, 6, 8, 5),
+(96, 1, 'TC2007', '67', 9, '23229', '8', '12', '2017', NULL, NULL, NULL, 19, 6, 10, 6),
+(97, 2, 'TC2007', '40', 4, '23103', '8', '12', '2017', NULL, NULL, NULL, 32, 5, 8, 8),
+(98, 700, 'TC2007', '74', 21, '31394', '8', '12', '2017', NULL, NULL, NULL, 0, 8, 9, 6),
+(99, 1, 'TC2008', '32', 2, '31396', '8', '12', '2017', NULL, NULL, NULL, 33, 6, 8, 10),
+(100, 2, 'TC2008', '32', 4, '31397', '8', '12', '2017', NULL, NULL, NULL, 34, 9, 6, 7),
+(101, 3, 'TC2008', '32', 5, '31398', '8', '12', '2017', NULL, NULL, NULL, 34, 7, 7, 5),
+(102, 1, 'TC2009', '2', 34, '16475', '8', '12', '2017', NULL, NULL, NULL, 30, 6, 5, 8),
+(103, 1, 'TC2011', '39', 15, '25611', '8', '12', '2017', NULL, NULL, NULL, 31, 6, 5, 7),
+(104, 2, 'TC2011', '39', 19, '25612', '8', '12', '2017', NULL, NULL, NULL, 28, 7, 6, 9),
+(105, 1, 'TC2016', '52', 33, '22533', '8', '12', '2017', NULL, NULL, NULL, 20, 9, 7, 7),
+(106, 2, 'TC2016', '52', 8, '23104', '8', '12', '2017', NULL, NULL, NULL, 30, 8, 7, 9),
+(107, 3, 'TC2016', '52', 18, '25614', '8', '12', '2017', NULL, NULL, NULL, 30, 9, 9, 9),
+(108, 4, 'TC2016', '13', 18, '25613', '8', '12', '2017', NULL, NULL, NULL, 37, 6, 8, 9),
+(109, 1, 'TC2017', '69', 37, '23105', '8', '12', '2017', NULL, NULL, NULL, 23, 9, 8, 7),
+(110, 2, 'TC2017', '43', 8, '25615', '8', '12', '2017', NULL, NULL, NULL, 30, 8, 8, 5),
+(111, 3, 'TC2017', '43', 36, '34037', '8', '12', '2017', NULL, NULL, NULL, 20, 8, 9, 8),
+(112, 2, 'TC2018', '54', 36, '23093', '8', '12', '2017', NULL, NULL, NULL, 31, 5, 8, 7),
+(113, 3, 'TC2018', '61', 36, '23660', '8', '12', '2017', NULL, NULL, NULL, 25, 9, 10, 6),
+(114, 4, 'TC2018', '64', 37, '26263', '8', '12', '2017', NULL, NULL, NULL, 30, 9, 6, 10),
+(115, 1, 'TC2019', '24', 18, '21117', '8', '12', '2017', NULL, NULL, NULL, 20, 6, 6, 6),
+(116, 2, 'TC2019', '36', 2, '22534', '8', '12', '2017', NULL, NULL, NULL, 36, 7, 7, 9),
+(117, 1, 'TC2020', '66', 36, '25617', '8', '12', '2017', NULL, NULL, NULL, 32, 7, 5, 5),
+(118, 2, 'TC2020', '3', 8, '25616', '8', '12', '2017', NULL, NULL, NULL, 36, 6, 8, 6),
+(119, 3, 'TC2020', '18', 14, '34002', '8', '12', '2017', NULL, NULL, NULL, 20, 7, 6, 5),
+(120, 1, 'TC2022', '61', 10, '25619', '8', '12', '2017', NULL, NULL, NULL, 30, 8, 6, 9),
+(121, 2, 'TC2022', '61', 9, '25618', '8', '12', '2017', NULL, NULL, NULL, 32, 9, 7, 7),
+(122, 3, 'TC2022', '37', 8, '23662', '8', '12', '2017', NULL, NULL, NULL, 29, 10, 7, 10),
+(123, 4, 'TC2022', '74', 39, '31401', '8', '12', '2017', NULL, NULL, NULL, 0, 9, 9, 5),
+(124, 650, 'TC2022', '28', 39, '32545', '8', '12', '2017', NULL, NULL, NULL, 11, 8, 8, 7),
+(125, 1, 'TC2024', '77', 8, '25620', '8', '12', '2017', NULL, NULL, NULL, 18, 8, 7, 10),
+(126, 2, 'TC2024', '57', 15, '27975', '8', '12', '2017', NULL, NULL, NULL, 9, 10, 8, 6),
+(127, 3, 'TC2024', '77', 25, '25621', '8', '12', '2017', NULL, NULL, NULL, 12, 5, 10, 8),
+(128, 1, 'TC2025', '40', 37, '22400', '8', '12', '2017', NULL, NULL, NULL, 24, 6, 9, 6),
+(129, 2, 'TC2025', '2', 25, '22535', '8', '12', '2017', NULL, NULL, NULL, 19, 6, 8, 9),
+(130, 1, 'TC2026', '34', 1, '16476', '8', '12', '2017', NULL, NULL, NULL, 31, 7, 6, 6),
+(131, 2, 'TC2026', '5', 33, '25622', '8', '12', '2017', NULL, NULL, NULL, 37, 8, 7, 6),
+(132, 3, 'TC2026', '74', 39, '27301', '8', '12', '2017', NULL, NULL, NULL, 0, 7, 10, 6),
+(133, 650, 'TC2026', '34', 39, '32543', '8', '12', '2017', NULL, NULL, NULL, 11, 7, 10, 10),
+(134, 1, 'TC2027', '61', 4, '27291', '8', '12', '2017', NULL, NULL, NULL, 32, 9, 6, 9),
+(135, 2, 'TC2027', '4', 23, '23663', '8', '12', '2017', NULL, NULL, NULL, 31, 10, 7, 7),
+(136, 3, 'TC2027', '74', 39, '27302', '8', '12', '2017', NULL, NULL, NULL, 0, 5, 9, 10),
+(137, 650, 'TC2027', '4', 39, '32548', '8', '12', '2017', NULL, NULL, NULL, 11, 5, 9, 7),
+(138, 2, 'TC2028', '60', 29, '23661', '8', '12', '2017', NULL, NULL, NULL, 30, 5, 9, 9),
+(139, 1, 'TC2029', '77', 8, '31402', '8', '12', '2017', NULL, NULL, NULL, 4, 9, 6, 7),
+(140, 1, 'TC3002', '26', 8, '25624', '8', '12', '2017', NULL, NULL, NULL, 27, 8, 6, 10),
+(141, 3, 'TC3002', '22', 29, '24403', '8', '12', '2017', NULL, NULL, NULL, 37, 5, 8, 9),
+(142, 4, 'TC3002', '22', 30, '33920', '8', '12', '2017', NULL, NULL, NULL, 11, 8, 6, 8),
+(143, 1, 'TC3007', '65', 8, '34525', '8', '12', '2017', NULL, NULL, NULL, 1, 9, 9, 6),
+(144, 1, 'TC3018', '45', 39, '30955', '8', '12', '2017', NULL, NULL, NULL, 4, 9, 7, 9),
+(145, 1, 'TC3020', '39', 14, '25627', '8', '12', '2017', NULL, NULL, NULL, 12, 9, 9, 6),
+(146, 1, 'TC3021', '9', 39, '23870', '8', '12', '2017', NULL, NULL, NULL, 7, 6, 9, 8),
+(147, 2, 'TC3022', '44', 36, '31403', '8', '12', '2017', NULL, NULL, NULL, 1, 9, 10, 8),
+(148, 3, 'TC3022', '67', 6, '26854', '8', '12', '2017', NULL, NULL, NULL, 43, 5, 8, 9),
+(149, 1, 'TC3023', '47', 25, '25628', '8', '12', '2017', NULL, NULL, NULL, 14, 5, 9, 6),
+(150, 1, 'TC3024', '68', 39, '31404', '8', '12', '2017', NULL, NULL, NULL, 6, 8, 7, 7),
+(151, 1, 'TC3025', '39', 9, '25625', '8', '12', '2017', NULL, NULL, NULL, 11, 8, 6, 9),
+(152, 1, 'TC3028', '62', 4, '25630', '8', '12', '2017', NULL, NULL, NULL, 24, 7, 9, 10),
+(153, 1, 'TC3029', '2', 2, '28944', '8', '12', '2017', NULL, NULL, NULL, 6, 7, 9, 8),
+(154, 1, 'TC3041', '35', 28, '25632', '8', '12', '2017', NULL, NULL, NULL, 20, 8, 6, 5),
+(155, 3, 'TC3041', '35', 8, '25631', '8', '12', '2017', NULL, NULL, NULL, 22, 10, 8, 7),
+(156, 1, 'TC3045', '65', 18, '31405', '8', '12', '2017', NULL, NULL, NULL, 30, 10, 8, 7),
+(157, 2, 'TC3045', '65', 36, '25633', '8', '12', '2017', NULL, NULL, NULL, 23, 9, 8, 8),
+(158, 700, 'TC3046', '74', 8, '31406', '8', '12', '2017', NULL, NULL, NULL, 0, 9, 8, 8),
+(159, 1, 'TC3047', '74', 4, '23094', '8', '12', '2017', NULL, NULL, NULL, 0, 6, 10, 6),
+(160, 1, 'TC3048', '23', 2, '25634', '8', '12', '2017', NULL, NULL, NULL, 24, 7, 7, 9),
+(161, 2, 'TC3048', '23', 8, '31407', '8', '12', '2017', NULL, NULL, NULL, 12, 7, 8, 5),
+(162, 1, 'TC3049', '35', 14, '25635', '8', '12', '2017', NULL, NULL, NULL, 32, 6, 7, 9),
+(163, 2, 'TC3049', '35', 29, '33921', '8', '12', '2017', NULL, NULL, NULL, 13, 10, 7, 7),
+(164, 1, 'TC3050', '33', 25, '25636', '8', '12', '2017', NULL, NULL, NULL, 20, 7, 10, 7),
+(165, 1, 'TC3051', '2', 2, '28945', '8', '12', '2017', NULL, NULL, NULL, 0, 5, 6, 10),
+(166, 1, 'TC3052', '5', 34, '23106', '8', '12', '2017', NULL, NULL, NULL, 23, 6, 10, 6),
+(167, 2, 'TC3052', '5', 26, '23095', '8', '12', '2017', NULL, NULL, NULL, 20, 8, 5, 6),
+(168, 1, 'TC3053', '19', 31, '25637', '8', '12', '2017', NULL, NULL, NULL, 2, 7, 6, 9),
+(169, 1, 'TC3054', '41', 8, '22560', '8', '12', '2017', NULL, NULL, NULL, 19, 9, 9, 7),
+(170, 2, 'TC3054', '65', 8, '34592', '8', '12', '2017', NULL, NULL, NULL, 19, 7, 7, 8),
+(171, 700, 'TC3055', '17', 7, '29686', '8', '12', '2017', NULL, NULL, NULL, 4, 10, 6, 8),
+(172, 1, 'TC3060', '76', 33, '22965', '8', '12', '2017', NULL, NULL, NULL, 13, 5, 6, 8),
+(173, 1, 'TC3061', '57', 15, '27974', '8', '12', '2017', NULL, NULL, NULL, 4, 8, 7, 6),
+(174, 1, 'TC3063', '46', 14, '24038', '8', '12', '2017', NULL, NULL, NULL, 9, 8, 9, 8),
+(175, 1, 'TC1001', '44', 6, '25586', '1', '5', '2017', NULL, NULL, NULL, 32, 10, 9, 6),
+(176, 10, 'TC1001', '54', 4, '22324', '1', '5', '2017', NULL, NULL, NULL, 32, 9, 10, 8),
+(177, 11, 'TC1001', '74', 34, '23097', '1', '5', '2017', NULL, NULL, NULL, 28, 9, 8, 8),
+(178, 12, 'TC1001', '72', 33, '25583', '1', '5', '2017', NULL, NULL, NULL, 35, 6, 10, 6),
+(179, 13, 'TC1001', '53', 33, '23222', '1', '5', '2017', NULL, NULL, NULL, 37, 9, 10, 7),
+(180, 14, 'TC1001', '19', 36, '22522', '1', '5', '2017', NULL, NULL, NULL, 30, 9, 6, 8),
+(181, 15, 'TC1001', '70', 28, '22322', '1', '5', '2017', NULL, NULL, NULL, 27, 8, 7, 9),
+(182, 16, 'TC1001', '54', 9, '25584', '1', '5', '2017', NULL, NULL, NULL, 36, 6, 6, 9),
+(183, 17, 'TC1001', '44', 34, '23236', '1', '5', '2017', NULL, NULL, NULL, 32, 8, 7, 9),
+(184, 18, 'TC1001', '72', 34, '22323', '1', '5', '2017', NULL, NULL, NULL, 31, 5, 9, 6),
+(185, 19, 'TC1001', '70', 31, '33826', '1', '5', '2017', NULL, NULL, NULL, 25, 5, 5, 9),
+(186, 2, 'TC1001', '72', 37, '25581', '1', '5', '2017', NULL, NULL, NULL, 32, 6, 9, 9),
+(187, 20, 'TC1001', '29', 26, '34012', '1', '5', '2017', NULL, NULL, NULL, 30, 10, 5, 8),
+(188, 21, 'TC1001', '29', 30, '34001', '1', '5', '2017', NULL, NULL, NULL, 10, 10, 5, 6),
+(189, 3, 'TC1001', '70', 30, '25582', '1', '5', '2017', NULL, NULL, NULL, 31, 5, 8, 6),
+(190, 4, 'TC1001', '55', 25, '23237', '1', '5', '2017', NULL, NULL, NULL, 32, 8, 9, 7),
+(191, 5, 'TC1001', '30', 14, '23220', '1', '5', '2017', NULL, NULL, NULL, 30, 10, 9, 7),
+(192, 6, 'TC1001', '50', 15, '25587', '1', '5', '2017', NULL, NULL, NULL, 38, 6, 6, 7),
+(193, 7, 'TC1001', '57', 34, '23221', '1', '5', '2017', NULL, NULL, NULL, 36, 6, 7, 5),
+(194, 8, 'TC1001', '49', 15, '22521', '1', '5', '2017', NULL, NULL, NULL, 38, 9, 6, 5),
+(195, 9, 'TC1001', '38', 33, '25585', '1', '5', '2017', NULL, NULL, NULL, 30, 9, 7, 6),
+(196, 1, 'TC1021', '20', 31, '22399', '1', '5', '2017', NULL, NULL, NULL, 29, 10, 5, 6),
+(197, 2, 'TC1021', '40', 9, '22530', '1', '5', '2017', NULL, NULL, NULL, 28, 6, 6, 8),
+(198, 1, 'TC1022', '15', 9, '22118', '1', '5', '2017', NULL, NULL, NULL, 101, 7, 6, 6),
+(199, 2, 'TC1022', '10', 9, '33272', '1', '5', '2017', NULL, NULL, NULL, 21, 8, 6, 8),
+(200, 1, 'TC2011', '39', 15, '25611', '1', '5', '2017', NULL, NULL, NULL, 31, 9, 9, 7),
+(201, 2, 'TC2011', '39', 19, '25612', '1', '5', '2017', NULL, NULL, NULL, 28, 8, 7, 8),
+(202, 1, 'TC2022', '61', 10, '25619', '1', '5', '2017', NULL, NULL, NULL, 30, 9, 10, 9),
+(203, 2, 'TC2022', '61', 9, '25618', '1', '5', '2017', NULL, NULL, NULL, 32, 9, 6, 5),
+(204, 3, 'TC2022', '37', 8, '23662', '1', '5', '2017', NULL, NULL, NULL, 29, 9, 8, 6),
+(205, 4, 'TC2022', '74', 39, '31401', '1', '5', '2017', NULL, NULL, NULL, 0, 8, 7, 10),
+(206, 650, 'TC2022', '28', 39, '32545', '1', '5', '2017', NULL, NULL, NULL, 11, 9, 5, 9),
+(207, 1, 'TC3002', '26', 8, '25624', '1', '5', '2017', NULL, NULL, NULL, 27, 9, 7, 9),
+(208, 3, 'TC3002', '22', 29, '24403', '1', '5', '2017', NULL, NULL, NULL, 37, 9, 8, 9),
+(209, 4, 'TC3002', '22', 30, '33920', '1', '5', '2017', NULL, NULL, NULL, 11, 10, 8, 9),
+(210, 1, 'TC3021', '9', 39, '23870', '1', '5', '2017', NULL, NULL, NULL, 7, 8, 8, 5),
+(211, 2, 'TC3022', '44', 36, '31403', '1', '5', '2017', NULL, NULL, NULL, 1, 7, 8, 10),
+(212, 3, 'TC3022', '67', 6, '26854', '1', '5', '2017', NULL, NULL, NULL, 43, 5, 7, 8),
+(213, 1, 'TC3041', '35', 28, '25632', '1', '5', '2017', NULL, NULL, NULL, 20, 9, 6, 10),
+(214, 3, 'TC3041', '35', 8, '25631', '1', '5', '2017', NULL, NULL, NULL, 22, 6, 8, 9),
+(215, 1, 'TC3051', '2', 2, '28945', '1', '5', '2017', NULL, NULL, NULL, 0, 7, 9, 8),
+(216, 1, 'TC3052', '5', 34, '23106', '1', '5', '2017', NULL, NULL, NULL, 23, 6, 7, 7),
+(217, 2, 'TC3052', '5', 26, '23095', '1', '5', '2017', NULL, NULL, NULL, 20, 8, 6, 9),
+(218, 1, 'TC3061', '57', 15, '27974', '1', '5', '2017', NULL, NULL, NULL, 4, 8, 10, 7),
+(219, 1, 'TC1003', '1', 2, '23098', '8', '12', '2016', NULL, NULL, NULL, 26, 9, 7, 7),
+(220, 2, 'TC1003', '1', 8, '22523', '8', '12', '2016', NULL, NULL, NULL, 26, 9, 6, 8),
+(221, 3, 'TC1003', '64', 36, '23238', '8', '12', '2016', NULL, NULL, NULL, 24, 6, 9, 6),
+(222, 4, 'TC1003', '1', 36, '22105', '8', '12', '2016', NULL, NULL, NULL, 21, 9, 10, 7),
+(223, 5, 'TC1003', '34', 8, '23223', '8', '12', '2016', NULL, NULL, NULL, 26, 9, 5, 8),
+(224, 6, 'TC1003', '34', 36, '25588', '8', '12', '2016', NULL, NULL, NULL, 15, 10, 9, 8),
+(225, 10, 'TC1014', '27', 15, '22116', '8', '12', '2016', NULL, NULL, NULL, 17, 6, 8, 8),
+(226, 11, 'TC1014', '5', 19, '23224', '8', '12', '2016', NULL, NULL, NULL, 26, 9, 8, 9),
+(227, 14, 'TC1014', '44', 4, '25593', '8', '12', '2016', NULL, NULL, NULL, 27, 8, 6, 9),
+(228, 16, 'TC1014', '42', 15, '25591', '8', '12', '2016', NULL, NULL, NULL, 26, 8, 9, 7),
+(229, 2, 'TC1014', '8', 4, '23090', '8', '12', '2016', NULL, NULL, NULL, 21, 6, 5, 9),
+(230, 3, 'TC1014', '8', 15, '22524', '8', '12', '2016', NULL, NULL, NULL, 20, 7, 10, 7),
+(231, 4, 'TC1014', '6', 36, '23099', '8', '12', '2016', NULL, NULL, NULL, 25, 7, 9, 10),
+(232, 5, 'TC1014', '77', 2, '25589', '8', '12', '2016', NULL, NULL, NULL, 27, 6, 9, 7),
+(233, 6, 'TC1014', '44', 37, '25590', '8', '12', '2016', NULL, NULL, NULL, 27, 5, 10, 7),
+(234, 8, 'TC1014', '77', 6, '25592', '8', '12', '2016', NULL, NULL, NULL, 23, 5, 7, 8),
+(235, 9, 'TC1014', '6', 2, '22525', '8', '12', '2016', NULL, NULL, NULL, 27, 8, 7, 9),
+(236, 1, 'TC2004', '6', 6, '27718', '8', '12', '2016', NULL, NULL, NULL, 32, 6, 7, 7),
+(237, 3, 'TC2004', '73', 14, '23228', '8', '12', '2016', NULL, NULL, NULL, 34, 10, 8, 5),
+(238, 4, 'TC2004', '74', 39, '22532', '8', '12', '2016', NULL, NULL, NULL, 0, 8, 5, 6),
+(239, 5, 'TC2004', '6', 20, '23775', '8', '12', '2016', NULL, NULL, NULL, 34, 9, 8, 8),
+(240, 650, 'TC2004', '26', 39, '32783', '8', '12', '2016', NULL, NULL, NULL, 9, 7, 6, 7),
+(241, 1, 'TC2024', '77', 8, '25620', '8', '12', '2016', NULL, NULL, NULL, 18, 7, 6, 7),
+(242, 2, 'TC2024', '57', 15, '27975', '8', '12', '2016', NULL, NULL, NULL, 9, 6, 7, 6),
+(243, 3, 'TC2024', '77', 25, '25621', '8', '12', '2016', NULL, NULL, NULL, 12, 6, 9, 8),
+(244, 1, 'TC3023', '47', 25, '25628', '8', '12', '2016', NULL, NULL, NULL, 14, 7, 6, 9),
+(245, 1, 'TC3024', '68', 39, '31404', '8', '12', '2016', NULL, NULL, NULL, 6, 9, 8, 6),
+(246, 1, 'TC3053', '19', 31, '25637', '8', '12', '2016', NULL, NULL, NULL, 2, 6, 7, 9),
+(247, 1, 'TC3054', '41', 8, '22560', '8', '12', '2016', NULL, NULL, NULL, 19, 7, 9, 6),
+(248, 2, 'TC3054', '65', 8, '34592', '8', '12', '2016', NULL, NULL, NULL, 19, 10, 8, 7),
+(249, 1, 'TC3063', '46', 14, '24038', '8', '12', '2016', NULL, NULL, NULL, 9, 9, 5, 9),
+(250, 1, 'TC1015', '11', 18, '25594', '1', '5', '2016', NULL, NULL, NULL, 26, 7, 5, 9),
+(251, 2, 'TC1015', '59', 8, '22396', '1', '5', '2016', NULL, NULL, NULL, 23, 6, 8, 10),
+(252, 3, 'TC1015', '58', 37, '23091', '1', '5', '2016', NULL, NULL, NULL, 24, 6, 5, 8),
+(253, 5, 'TC1015', '16', 14, '22526', '1', '5', '2016', NULL, NULL, NULL, 33, 10, 9, 8),
+(254, 6, 'TC1015', '58', 4, '23495', '1', '5', '2016', NULL, NULL, NULL, 25, 7, 6, 10),
+(255, 1, 'TC1016', '19', 4, '23100', '1', '5', '2016', NULL, NULL, NULL, 30, 5, 7, 9),
+(256, 1080, 'TC1016', '74', 3, '22024', '1', '5', '2016', NULL, NULL, NULL, 0, 9, 10, 5),
+(257, 1800, 'TC1016', '21', 3, '22189', '1', '5', '2016', NULL, NULL, NULL, 0, 7, 5, 9),
+(258, 1801, 'TC1016', '56', 3, '22022', '1', '5', '2016', NULL, NULL, NULL, 9, 6, 9, 9),
+(259, 1802, 'TC1016', '63', 3, '22020', '1', '5', '2016', NULL, NULL, NULL, 0, 8, 9, 7),
+(260, 2, 'TC1016', '64', 2, '22109', '1', '5', '2016', NULL, NULL, NULL, 30, 7, 6, 9),
+(261, 3, 'TC1016', '64', 33, '22527', '1', '5', '2016', NULL, NULL, NULL, 22, 10, 7, 5),
+(262, 4, 'TC1016', '64', 34, '22397', '1', '5', '2016', NULL, NULL, NULL, 23, 7, 7, 6),
+(263, 1, 'TC1025', '40', 26, '22531', '1', '5', '2016', NULL, NULL, NULL, 15, 9, 8, 8),
+(264, 1, 'TC1026', '25', 9, '23426', '1', '5', '2016', NULL, NULL, NULL, 15, 7, 9, 6),
+(265, 1, 'TC2006', '71', 36, '25608', '1', '5', '2016', NULL, NULL, NULL, 36, 5, 10, 8),
+(266, 2, 'TC2006', '31', 9, '25609', '1', '5', '2016', NULL, NULL, NULL, 36, 6, 9, 9),
+(267, 1, 'TC2016', '52', 33, '22533', '1', '5', '2016', NULL, NULL, NULL, 20, 7, 6, 7),
+(268, 2, 'TC2016', '52', 8, '23104', '1', '5', '2016', NULL, NULL, NULL, 30, 5, 6, 9),
+(269, 3, 'TC2016', '52', 18, '25614', '1', '5', '2016', NULL, NULL, NULL, 30, 9, 10, 8),
+(270, 4, 'TC2016', '13', 18, '25613', '1', '5', '2016', NULL, NULL, NULL, 37, 5, 7, 10),
+(271, 1, 'TC2025', '40', 37, '22400', '1', '5', '2016', NULL, NULL, NULL, 24, 8, 6, 5),
+(272, 2, 'TC2025', '2', 25, '22535', '1', '5', '2016', NULL, NULL, NULL, 19, 8, 8, 7),
+(273, 1, 'TC2026', '34', 1, '16476', '1', '5', '2016', NULL, NULL, NULL, 31, 10, 9, 7),
+(274, 2, 'TC2026', '5', 33, '25622', '1', '5', '2016', NULL, NULL, NULL, 37, 6, 6, 6),
+(275, 3, 'TC2026', '74', 39, '27301', '1', '5', '2016', NULL, NULL, NULL, 0, 6, 6, 7),
+(276, 650, 'TC2026', '34', 39, '32543', '1', '5', '2016', NULL, NULL, NULL, 11, 7, 7, 6),
+(277, 1, 'TC3025', '39', 9, '25625', '1', '5', '2016', NULL, NULL, NULL, 11, 5, 7, 7),
+(278, 1, 'TC3045', '65', 18, '31405', '1', '5', '2016', NULL, NULL, NULL, 30, 6, 5, 8),
+(279, 2, 'TC3045', '65', 36, '25633', '1', '5', '2016', NULL, NULL, NULL, 23, 8, 5, 9),
+(280, 700, 'TC3046', '74', 8, '31406', '1', '5', '2016', NULL, NULL, NULL, 0, 9, 7, 5),
+(281, 700, 'TC3055', '17', 7, '29686', '1', '5', '2016', NULL, NULL, NULL, 4, 8, 6, 7),
+(282, 1, 'TC1017', '57', 14, '22314', '8', '12', '2015', NULL, NULL, NULL, 32, 7, 9, 8),
+(283, 10, 'TC1017', '49', 19, '25600', '8', '12', '2015', NULL, NULL, NULL, 38, 9, 7, 7),
+(284, 11, 'TC1017', '49', 26, '25601', '8', '12', '2015', NULL, NULL, NULL, 36, 5, 5, 5),
+(285, 12, 'TC1017', '11', 33, '25598', '8', '12', '2015', NULL, NULL, NULL, 23, 10, 7, 8),
+(286, 13, 'TC1017', '2', 18, '23101', '8', '12', '2015', NULL, NULL, NULL, 25, 10, 10, 8),
+(287, 15, 'TC1017', '48', 9, '22315', '8', '12', '2015', NULL, NULL, NULL, 28, 7, 6, 7),
+(288, 16, 'TC1017', '75', 14, '22316', '8', '12', '2015', NULL, NULL, NULL, 32, 9, 9, 9),
+(289, 17, 'TC1017', '11', 14, '25599', '8', '12', '2015', NULL, NULL, NULL, 26, 7, 8, 9),
+(290, 18, 'TC1017', '57', 33, '23240', '8', '12', '2015', NULL, NULL, NULL, 34, 5, 9, 10),
+(291, 19, 'TC1017', '57', 37, '23226', '8', '12', '2015', NULL, NULL, NULL, 35, 6, 8, 6),
+(292, 2, 'TC1017', '7', 2, '25597', '8', '12', '2015', NULL, NULL, NULL, 27, 7, 7, 7),
+(293, 20, 'TC1017', '30', 37, '25595', '8', '12', '2015', NULL, NULL, NULL, 38, 8, 7, 9),
+(294, 3, 'TC1017', '7', 8, '25596', '8', '12', '2015', NULL, NULL, NULL, 27, 9, 5, 9),
+(295, 4, 'TC1017', '51', 27, '22529', '8', '12', '2015', NULL, NULL, NULL, 32, 8, 7, 6),
+(296, 6, 'TC1017', '52', 34, '16568', '8', '12', '2015', NULL, NULL, NULL, 34, 6, 7, 7),
+(297, 7, 'TC1017', '13', 9, '23239', '8', '12', '2015', NULL, NULL, NULL, 37, 9, 5, 7),
+(298, 8, 'TC1017', '12', 37, '23225', '8', '12', '2015', NULL, NULL, NULL, 37, 7, 8, 10),
+(299, 1, 'TC1018', '13', 8, '23102', '8', '12', '2015', NULL, NULL, NULL, 23, 10, 9, 5),
+(300, 2, 'TC1018', '13', 15, '25604', '8', '12', '2015', NULL, NULL, NULL, 33, 9, 9, 6),
+(301, 3, 'TC1018', '43', 37, '25603', '8', '12', '2015', NULL, NULL, NULL, 22, 9, 9, 9),
+(302, 4, 'TC1018', '43', 4, '25602', '8', '12', '2015', NULL, NULL, NULL, 36, 6, 7, 7),
+(303, 5, 'TC1018', '13', 34, '22117', '8', '12', '2015', NULL, NULL, NULL, 8, 10, 8, 6),
+(304, 1, 'TC2007', '67', 9, '23229', '8', '12', '2015', NULL, NULL, NULL, 19, 7, 7, 7),
+(305, 2, 'TC2007', '40', 4, '23103', '8', '12', '2015', NULL, NULL, NULL, 32, 6, 7, 7),
+(306, 700, 'TC2007', '74', 21, '31394', '8', '12', '2015', NULL, NULL, NULL, 0, 9, 6, 6),
+(307, 1, 'TC2008', '32', 2, '31396', '8', '12', '2015', NULL, NULL, NULL, 33, 9, 10, 8),
+(308, 2, 'TC2008', '32', 4, '31397', '8', '12', '2015', NULL, NULL, NULL, 34, 9, 9, 6),
+(309, 3, 'TC2008', '32', 5, '31398', '8', '12', '2015', NULL, NULL, NULL, 34, 9, 10, 7),
+(310, 1, 'TC2017', '69', 37, '23105', '8', '12', '2015', NULL, NULL, NULL, 23, 9, 5, 6),
+(311, 2, 'TC2017', '43', 8, '25615', '8', '12', '2015', NULL, NULL, NULL, 30, 10, 5, 7),
+(312, 3, 'TC2017', '43', 36, '34037', '8', '12', '2015', NULL, NULL, NULL, 20, 6, 8, 9),
+(313, 2, 'TC2018', '54', 36, '23093', '8', '12', '2015', NULL, NULL, NULL, 31, 7, 7, 7),
+(314, 3, 'TC2018', '61', 36, '23660', '8', '12', '2015', NULL, NULL, NULL, 25, 8, 9, 5),
+(315, 4, 'TC2018', '64', 37, '26263', '8', '12', '2015', NULL, NULL, NULL, 30, 6, 10, 5),
+(316, 1, 'TC2027', '61', 4, '27291', '8', '12', '2015', NULL, NULL, NULL, 32, 8, 7, 9),
+(317, 2, 'TC2027', '4', 23, '23663', '8', '12', '2015', NULL, NULL, NULL, 31, 7, 9, 10),
+(318, 3, 'TC2027', '74', 39, '27302', '8', '12', '2015', NULL, NULL, NULL, 0, 6, 9, 5),
+(319, 650, 'TC2027', '4', 39, '32548', '8', '12', '2015', NULL, NULL, NULL, 11, 7, 7, 6),
+(320, 2, 'TC2028', '60', 29, '23661', '8', '12', '2015', NULL, NULL, NULL, 30, 5, 9, 7),
+(321, 1, 'TC3007', '65', 8, '34525', '8', '12', '2015', NULL, NULL, NULL, 1, 5, 9, 6),
+(322, 1, 'TC3018', '45', 39, '30955', '8', '12', '2015', NULL, NULL, NULL, 4, 8, 10, 5),
+(323, 1, 'TC3028', '62', 4, '25630', '8', '12', '2015', NULL, NULL, NULL, 24, 6, 7, 7),
+(324, 1, 'TC3047', '74', 4, '23094', '8', '12', '2015', NULL, NULL, NULL, 0, 6, 6, 10),
+(325, 1, 'TC3048', '23', 2, '25634', '8', '12', '2015', NULL, NULL, NULL, 24, 6, 7, 7),
+(326, 2, 'TC3048', '23', 8, '31407', '8', '12', '2015', NULL, NULL, NULL, 12, 5, 9, 9),
+(327, 2, 'TC1019', '36', 18, '23227', '1', '5', '2015', NULL, NULL, NULL, 35, 5, 7, 10),
+(328, 3, 'TC1019', '36', 25, '23092', '1', '5', '2015', NULL, NULL, NULL, 38, 8, 6, 5),
+(329, 4, 'TC1019', '26', 2, '22485', '1', '5', '2015', NULL, NULL, NULL, 28, 9, 8, 7),
+(330, 5, 'TC1019', '73', 18, '22486', '1', '5', '2015', NULL, NULL, NULL, 35, 7, 6, 8),
+(331, 6, 'TC1019', '14', 34, '23789', '1', '5', '2015', NULL, NULL, NULL, 18, 5, 9, 7),
+(332, 1, 'TC1020', '41', 15, '23241', '1', '5', '2015', NULL, NULL, NULL, 27, 7, 9, 6),
+(333, 2, 'TC1020', '41', 26, '22398', '1', '5', '2015', NULL, NULL, NULL, 23, 6, 7, 7),
+(334, 3, 'TC1020', '36', 6, '23242', '1', '5', '2015', NULL, NULL, NULL, 24, 6, 6, 8),
+(335, 1, 'TC2009', '2', 34, '16475', '1', '5', '2015', NULL, NULL, NULL, 30, 5, 9, 10),
+(336, 1, 'TC2019', '24', 18, '21117', '1', '5', '2015', NULL, NULL, NULL, 20, 6, 8, 10),
+(337, 2, 'TC2019', '36', 2, '22534', '1', '5', '2015', NULL, NULL, NULL, 36, 10, 6, 9),
+(338, 1, 'TC2020', '66', 36, '25617', '1', '5', '2015', NULL, NULL, NULL, 32, 6, 6, 5),
+(339, 2, 'TC2020', '3', 8, '25616', '1', '5', '2015', NULL, NULL, NULL, 36, 8, 7, 7),
+(340, 3, 'TC2020', '18', 14, '34002', '1', '5', '2015', NULL, NULL, NULL, 20, 8, 6, 8),
+(341, 1, 'TC2029', '77', 8, '31402', '1', '5', '2015', NULL, NULL, NULL, 4, 6, 9, 6),
+(342, 1, 'TC3020', '39', 14, '25627', '1', '5', '2015', NULL, NULL, NULL, 12, 9, 9, 9),
+(343, 1, 'TC3029', '2', 2, '28944', '1', '5', '2015', NULL, NULL, NULL, 6, 9, 7, 8),
+(344, 1, 'TC3049', '35', 14, '25635', '1', '5', '2015', NULL, NULL, NULL, 32, 10, 9, 7),
+(345, 2, 'TC3049', '35', 29, '33921', '1', '5', '2015', NULL, NULL, NULL, 13, 5, 6, 5),
+(346, 1, 'TC3050', '33', 25, '25636', '1', '5', '2015', NULL, NULL, NULL, 20, 8, 9, 7),
+(347, 1, 'TC3060', '76', 33, '22965', '1', '5', '2015', NULL, NULL, NULL, 13, 7, 8, 9);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `horarios`
+--
+
+CREATE TABLE `horarios` (
+  `Id` int(2) NOT NULL,
+  `Horario` varchar(15) DEFAULT NULL,
+  `Dia` varchar(3) DEFAULT NULL,
+  `Hora` varchar(12) DEFAULT NULL,
+  `Segmento` varchar(15) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Volcado de datos para la tabla `horarios`
+--
+
+INSERT INTO `horarios` (`Id`, `Horario`, `Dia`, `Hora`, `Segmento`) VALUES
+(1, '10:00/2 Mi', '', '', 'matutino'),
+(2, '10:00/3 LuJu', '', '', 'matutino'),
+(3, '10:00/3 Ma', '', '', 'matutino'),
+(4, '10:00/3 MaVi', '', '', 'matutino'),
+(5, '10:00/3 Mi', '', '', 'matutino'),
+(6, '10:00/6 Mi', '', '', 'matutino'),
+(7, '10:00/8 Mi', '', '', 'matutino'),
+(8, '11:30/3 LuJu', '', '', 'matutino'),
+(9, '11:30/3 MaVi', '', '', 'matutino'),
+(10, '13:00/2 LuJu', '', '', 'MedioDia'),
+(11, '13:00/2 MaVi', '', '', 'MedioDia'),
+(12, '13:00/2 Mi', '', '', 'MedioDia'),
+(13, '13:00/3 Lu', '', '', 'MedioDia'),
+(14, '13:00/3 LuJu', '', '', 'MedioDia'),
+(15, '13:00/3 MaVi', '', '', 'MedioDia'),
+(16, '14:30/2 MaVi', '', '', 'Tarde'),
+(17, '14:30/2 Mi', '', '', 'Tarde'),
+(18, '14:30/3 LuJu', '', '', 'Tarde'),
+(19, '14:30/3 MaVi', '', '', 'Tarde'),
+(20, '14:30/6 Mi', '', '', 'Tarde'),
+(21, '15:00/6 Mi', '', '', 'Tarde'),
+(22, '16:00/2 LuJu', '', '', 'Tarde'),
+(23, '16:00/2 MaVi', '', '', 'Tarde'),
+(24, '16:00/2 Mi', '', '', 'Tarde'),
+(25, '16:00/3 LuJu', '', '', 'Tarde'),
+(26, '16:00/3 MaVi', '', '', 'Tarde'),
+(27, '18:00/3 LuJu', '', '', 'Noche'),
+(28, '18:00/6 Ju', '', '', 'Noche'),
+(29, '18:00/6 Lu', '', '', 'Noche'),
+(30, '18:00/6 Ma', '', '', 'Noche'),
+(31, '18:00/6 Mi', '', '', 'Noche'),
+(32, '7:00/2 Mi', '', '', 'Tempranero'),
+(33, '7:00/3 LuJu', '', '', 'Tempranero'),
+(34, '7:00/3 MaVi', '', '', 'Tempranero'),
+(35, '7:00/3 Mi', '', '', 'Tempranero'),
+(36, '8:30/3 LuJu', '', '', 'Matutino'),
+(37, '8:30/3 MaVi', '', '', 'Matutino'),
+(38, '8:30/3 Mi', '', '', 'Matutino'),
+(39, 'Cualquiera', '', '', '');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `prefiereimpartir`
+--
+
+CREATE TABLE `prefiereimpartir` (
+  `Id` int(11) NOT NULL,
+  `ClaveCurso` varchar(8) DEFAULT NULL,
+  `NominaProfe` char(10) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Volcado de datos para la tabla `prefiereimpartir`
+--
+
+INSERT INTO `prefiereimpartir` (`Id`, `ClaveCurso`, `NominaProfe`) VALUES
+(1, 'TC1020', '41'),
+(2, 'TI3030', '41');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `profesor`
+--
+
+CREATE TABLE `profesor` (
+  `Nomina` char(10) NOT NULL DEFAULT 'NOT NULL',
+  `Nombre` varchar(50) DEFAULT NULL,
+  `FechaContratacion` date DEFAULT NULL,
+  `TipoContrato` varchar(20) DEFAULT NULL,
+  `TOEFL` int(10) DEFAULT NULL,
+  `CapCiudadania` char(1) DEFAULT NULL,
+  `CapEtica` char(1) DEFAULT NULL,
+  `CapIngles` char(1) DEFAULT NULL,
+  `Email` varchar(50) DEFAULT NULL,
+  `TelefonoPersonal` varchar(15) DEFAULT NULL,
+  `TelefonoOficina` varchar(15) DEFAULT NULL,
+  `Oficina` varchar(10) DEFAULT NULL,
+  `LugarDeTrabajo` varchar(50) DEFAULT NULL,
+  `FechaConTrabajoExt` date DEFAULT NULL,
+  `Carrera` varchar(50) DEFAULT NULL,
+  `FechaObtCarrera` date DEFAULT NULL,
+  `Maestria` varchar(50) DEFAULT NULL,
+  `FechaObtMaestria` date DEFAULT NULL,
+  `Doctorado` varchar(50) DEFAULT NULL,
+  `FechaObtDoctorado` date DEFAULT NULL,
+  `CCTR` varchar(50) DEFAULT NULL,
+  `Foto` varchar(200) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Volcado de datos para la tabla `profesor`
+--
+
+INSERT INTO `profesor` (`Nomina`, `Nombre`, `FechaContratacion`, `TipoContrato`, `TOEFL`, `CapCiudadania`, `CapEtica`, `CapIngles`, `Email`, `TelefonoPersonal`, `TelefonoOficina`, `Oficina`, `LugarDeTrabajo`, `FechaConTrabajoExt`, `Carrera`, `FechaObtCarrera`, `Maestria`, `FechaObtMaestria`, `Doctorado`, `FechaObtDoctorado`, `CCTR`, `Foto`) VALUES
+('1', 'Alejandra Gonz?lez A', NULL, NULL, 550, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('10', 'Claudia Aja L', '2017-11-02', NULL, 300, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('11', 'Cristina Ver?nica Gonz?lez C', NULL, NULL, 650, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('12', 'Dalia Ivonne Fierro N', NULL, NULL, NULL, 'Y', 'N', 'Y', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('13', 'Delia Mar?a Soledad Castro R', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('14', 'Eduardo G?mez S', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('15', 'Elda Guadalupe Quiroga G', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('16', 'Enrique Garc?a C', NULL, NULL, NULL, NULL, NULL, 'Y', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('17', 'Faustino Bejarano R', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('18', 'Francisco J Cant? O', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('19', 'Francisco Javier Hern?ndez P', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('2', 'Alejandro Parra B', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('20', 'Gerardo A C?rdenas C', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('21', 'Gilberto Hern?ndez H', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('22', 'H?ctor de Luna B', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('23', 'H?ctor Gibr?n Ceballos C', '2016-11-09', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('24', 'Ivan Mauricio Amaya C', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('25', 'Jaime Mart?nez G', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('26', 'Jakeline Marcos A', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('27', 'Javier Alberto Giese R', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('28', 'Jessica Izquierdo A', NULL, NULL, NULL, NULL, NULL, 'Y', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('29', 'Jorge Alejandro Alvarez B', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('3', 'Alejandro Rosales P', NULL, NULL, NULL, NULL, NULL, 'Y', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('30', 'Jorge Anibal Quishpe A', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('31', 'Jos? Carlos Ortiz B', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('32', 'Jos? Ignacio Juan de Icaza A', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('33', 'Jos? Luis Gordillo M', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('34', 'Jos? Ra?l P?rez C', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('35', 'Juan Carlos Lavariega J', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('36', 'Juan Ra?l Esparza M', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('37', 'Kevin Brook Long', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('38', 'Laura Patricia Salazar C', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('39', 'Leonardo Garrido L', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('4', 'Alfredo Aranguren T', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('40', 'Lorena Beatriz Mart?nez E', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('41', 'Lorena G Gomez M', NULL, NULL, NULL, 'Y', 'Y', 'Y', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('42', 'Lorena Sof?a Ram?rez N', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('43', 'Luis Humberto Gonz?lez G', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('44', 'Ma. Guadalupe Roque D', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('45', 'Manuel Eduardo Izquierdo M', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('46', 'Manuel Ter?n M', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('47', 'Manuel Valenzuela R', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('48', 'Margarita Toro P', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('49', 'Mar?a Concepci?n Villar C', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('5', 'Alfredo Salazar V', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('50', 'Mar?a del C Cabello P', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('51', 'Mar?a del Carmen P?manes F', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('52', 'Mar?a E Garza L', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('53', 'Mar?a Imelda Vald?z S', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('54', 'Mar?a Raquel Landa C', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('55', 'Mar?a Sof?a Roque D', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('56', 'Mario Isidro De la Fuente M', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('57', 'Martha Sordia S', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('58', 'Mart?n de Jes?s Gonz?lez M', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('59', 'Moraima Campbell D', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('6', 'Antonio Javier Mejorado C', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('60', 'Norma Frida Roffe S', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('61', 'Pablo Daniel D?az L', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('62', 'Pablo G Ram?rez F', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('63', 'Pedro N?jera G', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('64', 'Rafael Emilio Davalos V', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('65', 'Rafael Salazar C', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('66', 'Ram?n Felipe Brena P', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('67', 'Ra?l Valente Ram?rez V', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('68', 'Ricardo Manuel Marmolejo G', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('69', 'Rom?n Mart?nez M', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('7', 'Armandina Juana Leal F', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('70', 'Sandra Patricia Trevi?o A', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('71', 'Santiago Enrique Conant P', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('72', 'Sergio Trinidad Guimond L', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('73', 'Silvia Iliana Ram?rez R', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('74', 'Staff', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('75', 'Ver?nica Nelly Castillo E', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('76', 'Xochitl L Morales R', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('77', 'Yolanda Mart?nez T', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('8', 'Bertha Laura Garc?a d', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('9', 'Carlos Astengo N', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `puedeimpartir`
+--
+
+CREATE TABLE `puedeimpartir` (
+  `Id` int(11) NOT NULL,
+  `ClaveCurso` varchar(8) DEFAULT NULL,
+  `NominaProfe` char(10) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Volcado de datos para la tabla `puedeimpartir`
+--
+
+INSERT INTO `puedeimpartir` (`Id`, `ClaveCurso`, `NominaProfe`) VALUES
+(1, 'TC1019', '41'),
+(2, 'TC2004', '41'),
+(3, 'TC2008', '41'),
+(4, 'TC3012', '41');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `tablahorarios`
+--
+
+CREATE TABLE `tablahorarios` (
+  `id` int(2) DEFAULT NULL,
+  `horario` varchar(12) DEFAULT NULL,
+  `dia` varchar(10) DEFAULT NULL,
+  `hora` varchar(10) DEFAULT NULL,
+  `segmento` varchar(10) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Volcado de datos para la tabla `tablahorarios`
+--
+
+INSERT INTO `tablahorarios` (`id`, `horario`, `dia`, `hora`, `segmento`) VALUES
+(1, '10:00/2 Mi', '', '', 'matutino'),
+(2, '10:00/3 LuJu', '', '', 'matutino'),
+(3, '10:00/3 Ma', '', '', 'matutino'),
+(4, '10:00/3 MaVi', '', '', 'matutino'),
+(5, '10:00/3 Mi', '', '', 'matutino'),
+(6, '10:00/6 Mi', '', '', 'matutino'),
+(7, '10:00/8 Mi', '', '', 'matutino'),
+(8, '11:30/3 LuJu', '', '', 'matutino'),
+(9, '11:30/3 MaVi', '', '', 'matutino'),
+(10, '13:00/2 LuJu', '', '', 'MedioDia'),
+(11, '13:00/2 MaVi', '', '', 'MedioDia'),
+(12, '13:00/2 Mi', '', '', 'MedioDia'),
+(13, '13:00/3 Lu', '', '', 'MedioDia'),
+(14, '13:00/3 LuJu', '', '', 'MedioDia'),
+(15, '13:00/3 MaVi', '', '', 'MedioDia'),
+(16, '14:30/2 MaVi', '', '', 'Tarde'),
+(17, '14:30/2 Mi', '', '', 'Tarde'),
+(18, '14:30/3 LuJu', '', '', 'Tarde'),
+(19, '14:30/3 MaVi', '', '', 'Tarde'),
+(20, '14:30/6 Mi', '', '', 'Tarde'),
+(21, '15:00/6 Mi', '', '', 'Tarde'),
+(22, '16:00/2 LuJu', '', '', 'Tarde'),
+(23, '16:00/2 MaVi', '', '', 'Tarde'),
+(24, '16:00/2 Mi', '', '', 'Tarde'),
+(25, '16:00/3 LuJu', '', '', 'Tarde'),
+(26, '16:00/3 MaVi', '', '', 'Tarde'),
+(27, '18:00/3 LuJu', '', '', 'Noche'),
+(28, '18:00/6 Ju', '', '', 'Noche'),
+(29, '18:00/6 Lu', '', '', 'Noche'),
+(30, '18:00/6 Ma', '', '', 'Noche'),
+(31, '18:00/6 Mi', '', '', 'Noche'),
+(32, '7:00/2 Mi', '', '', 'Tempranero'),
+(33, '7:00/3 LuJu', '', '', 'Tempranero'),
+(34, '7:00/3 MaVi', '', '', 'Tempranero'),
+(35, '7:00/3 Mi', '', '', 'Tempranero'),
+(36, '8:30/3 LuJu', '', '', 'Matutino'),
+(37, '8:30/3 MaVi', '', '', 'Matutino'),
+(38, '8:30/3 Mi', '', '', 'Matutino'),
+(39, 'Cualquiera', '', '', '');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `tablamaterias`
+--
+
+CREATE TABLE `tablamaterias` (
+  `aveMateria` varchar(6) DEFAULT NULL,
+  `NombreMateria` varchar(66) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Volcado de datos para la tabla `tablamaterias`
+--
+
+INSERT INTO `tablamaterias` (`aveMateria`, `NombreMateria`) VALUES
+('TC1001', 'Introducción a la computación'),
+('TC1003', 'Matemáticas discretas'),
+('TC1014', 'Fundamentos de programación'),
+('TC1015', 'Fundamentos de diseño interactivo'),
+('TC1016', 'Organización computacional'),
+('TC1017', 'Solución de problemas con programación'),
+('TC1018', 'Estructura de datos'),
+('TC1019', 'Fundamentos de ingeniería de software'),
+('TC1020', 'Bases de datos'),
+('TC1021', 'Proyecto de desarrollo de videojuegos'),
+('TC1022', 'Introducción a la ingeniería en tecnologías computacionales'),
+('TC1025', 'Tecnologías de la información y la edición'),
+('TC1026', 'Introducción a la ingeniería en tecnologías de información'),
+('TC2004', 'Análisis y modelación de sistemas de software'),
+('TC2006', 'Lenguajes de programación'),
+('TC2007', 'Métodos cuantitativos y simulación'),
+('TC2009', 'Uso y administración de sistemas operativos'),
+('TC2011', 'Sistemas inteligentes'),
+('TC2016', 'Programación orientada a objetos'),
+('TC2017', 'Análisis y diseño de algoritmos'),
+('TC2018', 'Fundamentos de redes'),
+('TC2019', 'Métodos numéricos en ingeniería'),
+('TC2020', 'Matemáticas computacionales'),
+('TC2022', 'Interconexión de redes'),
+('TC2024', 'Proyectos de desarrollo para dispositivos móviles'),
+('TC2025', 'Programación avanzada'),
+('TC2026', 'Desarrollo de aplicaciones web'),
+('TC2027', 'Seguridad informática'),
+('TC2028', 'Lenguajes y traductores'),
+('TC3002', 'Administración de proyectos de ingeniería de software'),
+('TC3020', 'Aprendizaje automático'),
+('TC3021', 'Desarrollo de videojuegos'),
+('TC3022', 'Gráficas computacionales'),
+('TC3023', 'Inteligencia computacional'),
+('TC3025', 'Sistemas multiagentes'),
+('TC3028', 'Interfaces físicas'),
+('TC3029', 'Seguridad, respaldo, recuperación y archivado de la información'),
+('TC3041', 'Bases de datos avanzadas'),
+('TC3045', 'Calidad y pruebas de software'),
+('TC3047', 'Administración de servidores'),
+('TC3048', 'Diseño de compiladores'),
+('TC3049', 'Diseño y arquitectura de software'),
+('TC3050', 'Visión para robots'),
+('TC3051', 'Arquitecturas empresariales de tecnologías de información'),
+('TC3052', 'Laboratorio de desarrollo de aplicaciones Web'),
+('TC3053', 'Proyecto integrador de arquitectura de tecnologías de información'),
+('TC3054', 'Proyecto integrador para el desarrollo de soluciones empresariales'),
+('TC3060', 'Modelos y análisis de redes sociales'),
+('TC3061', 'Desarrollo de aplicaciones en Android'),
+('TC3063', 'Análisis y ciencia de grandes volúmenes de datos');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `tablaprofescursos`
+--
+
+CREATE TABLE `tablaprofescursos` (
+  `ClaseId` int(3) DEFAULT NULL,
+  `Clave` varchar(6) DEFAULT NULL,
+  `Grupo` int(4) DEFAULT NULL,
+  `CRN` int(5) DEFAULT NULL,
+  `NombreProfe` varchar(28) DEFAULT NULL,
+  `ProfesorId` int(2) DEFAULT NULL,
+  `Poblacion` int(3) DEFAULT NULL,
+  `Horario` int(2) DEFAULT NULL,
+  `SemestrInicia` int(1) DEFAULT NULL,
+  `SemestreTermina` int(2) DEFAULT NULL,
+  `AnioSemestre` int(4) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Volcado de datos para la tabla `tablaprofescursos`
+--
+
+INSERT INTO `tablaprofescursos` (`ClaseId`, `Clave`, `Grupo`, `CRN`, `NombreProfe`, `ProfesorId`, `Poblacion`, `Horario`, `SemestrInicia`, `SemestreTermina`, `AnioSemestre`) VALUES
+(1, 'TC1001', 1, 25586, 'Ma. Guadalupe Roque D', 44, 32, 6, 8, 12, 2017),
+(2, 'TC1001', 10, 22324, 'Mar?a Raquel Landa C', 54, 32, 4, 8, 12, 2017),
+(3, 'TC1001', 11, 23097, 'Staff', 74, 28, 34, 8, 12, 2017),
+(4, 'TC1001', 12, 25583, 'Sergio Trinidad Guimond L', 72, 35, 33, 8, 12, 2017),
+(5, 'TC1001', 13, 23222, 'Mar?a Imelda Vald?z S', 53, 37, 33, 8, 12, 2017),
+(6, 'TC1001', 14, 22522, 'Francisco Javier Hern?ndez P', 19, 30, 36, 8, 12, 2017),
+(7, 'TC1001', 15, 22322, 'Sandra Patricia Trevi?o A', 70, 27, 28, 8, 12, 2017),
+(8, 'TC1001', 16, 25584, 'Mar?a Raquel Landa C', 54, 36, 9, 8, 12, 2017),
+(9, 'TC1001', 17, 23236, 'Ma. Guadalupe Roque D', 44, 32, 34, 8, 12, 2017),
+(10, 'TC1001', 18, 22323, 'Sergio Trinidad Guimond L', 72, 31, 34, 8, 12, 2017),
+(11, 'TC1001', 19, 33826, 'Sandra Patricia Trevi?o A', 70, 25, 31, 8, 12, 2017),
+(12, 'TC1001', 2, 25581, 'Sergio Trinidad Guimond L', 72, 32, 37, 8, 12, 2017),
+(13, 'TC1001', 20, 34012, 'Jorge Alejandro Alvarez B', 29, 30, 26, 8, 12, 2017),
+(14, 'TC1001', 21, 34001, 'Jorge Alejandro Alvarez B', 29, 10, 30, 8, 12, 2017),
+(15, 'TC1001', 3, 25582, 'Sandra Patricia Trevi?o A', 70, 31, 30, 8, 12, 2017),
+(16, 'TC1001', 4, 23237, 'Mar?a Sof?a Roque D', 55, 32, 25, 8, 12, 2017),
+(17, 'TC1001', 5, 23220, 'Jorge Anibal Quishpe A', 30, 30, 14, 8, 12, 2017),
+(18, 'TC1001', 6, 25587, 'Mar?a del C Cabello P', 50, 38, 15, 8, 12, 2017),
+(19, 'TC1001', 7, 23221, 'Martha Sordia S', 57, 36, 34, 8, 12, 2017),
+(20, 'TC1001', 8, 22521, 'Mar?a Concepci?n Villar C', 49, 38, 15, 8, 12, 2017),
+(21, 'TC1001', 9, 25585, 'Laura Patricia Salazar C', 38, 30, 33, 8, 12, 2017),
+(22, 'TC1003', 1, 23098, 'Alejandra Gonz?lez A', 1, 26, 2, 8, 12, 2017),
+(23, 'TC1003', 2, 22523, 'Alejandra Gonz?lez A', 1, 26, 8, 8, 12, 2017),
+(24, 'TC1003', 3, 23238, 'Rafael Emilio Davalos V', 64, 24, 36, 8, 12, 2017),
+(25, 'TC1003', 4, 22105, 'Alejandra Gonz?lez A', 1, 21, 36, 8, 12, 2017),
+(26, 'TC1003', 5, 23223, 'Jos? Ra?l P?rez C', 34, 26, 8, 8, 12, 2017),
+(27, 'TC1003', 6, 25588, 'Jos? Ra?l P?rez C', 34, 15, 36, 8, 12, 2017),
+(28, 'TC1014', 10, 22116, 'Javier Alberto Giese R', 27, 17, 15, 8, 12, 2017),
+(29, 'TC1014', 11, 23224, 'Alfredo Salazar V', 5, 26, 19, 8, 12, 2017),
+(30, 'TC1014', 14, 25593, 'Ma. Guadalupe Roque D', 44, 27, 4, 8, 12, 2017),
+(31, 'TC1014', 16, 25591, 'Lorena Sof?a Ram?rez N', 42, 26, 15, 8, 12, 2017),
+(32, 'TC1014', 2, 23090, 'Bertha Laura Garc?a d', 8, 21, 4, 8, 12, 2017),
+(33, 'TC1014', 3, 22524, 'Bertha Laura Garc?a d', 8, 20, 15, 8, 12, 2017),
+(34, 'TC1014', 4, 23099, 'Antonio Javier Mejorado C', 6, 25, 36, 8, 12, 2017),
+(35, 'TC1014', 5, 25589, 'Yolanda Mart?nez T', 77, 27, 2, 8, 12, 2017),
+(36, 'TC1014', 6, 25590, 'Ma. Guadalupe Roque D', 44, 27, 37, 8, 12, 2017),
+(37, 'TC1014', 8, 25592, 'Yolanda Mart?nez T', 77, 23, 6, 8, 12, 2017),
+(38, 'TC1014', 9, 22525, 'Antonio Javier Mejorado C', 6, 27, 2, 8, 12, 2017),
+(39, 'TC1015', 1, 25594, 'Cristina Ver?nica Gonz?lez C', 11, 26, 18, 8, 12, 2017),
+(40, 'TC1015', 2, 22396, 'Moraima Campbell D', 59, 23, 8, 8, 12, 2017),
+(41, 'TC1015', 3, 23091, 'Mart?n de Jes?s Gonz?lez M', 58, 24, 37, 8, 12, 2017),
+(42, 'TC1015', 5, 22526, 'Enrique Garc?a C', 16, 33, 14, 8, 12, 2017),
+(43, 'TC1015', 6, 23495, 'Mart?n de Jes?s Gonz?lez M', 58, 25, 4, 8, 12, 2017),
+(44, 'TC1016', 1, 23100, 'Francisco Javier Hern?ndez P', 19, 30, 4, 8, 12, 2017),
+(45, 'TC1016', 1080, 22024, 'Staff', 74, 0, 3, 8, 12, 2017),
+(46, 'TC1016', 1800, 22189, 'Gilberto Hern?ndez H', 21, 0, 3, 8, 12, 2017),
+(47, 'TC1016', 1801, 22022, 'Mario Isidro De la Fuente M', 56, 9, 3, 8, 12, 2017),
+(48, 'TC1016', 1802, 22020, 'Pedro N?jera G', 63, 0, 3, 8, 12, 2017),
+(49, 'TC1016', 2, 22109, 'Rafael Emilio Davalos V', 64, 30, 2, 8, 12, 2017),
+(50, 'TC1016', 3, 22527, 'Rafael Emilio Davalos V', 64, 22, 33, 8, 12, 2017),
+(51, 'TC1016', 4, 22397, 'Rafael Emilio Davalos V', 64, 23, 34, 8, 12, 2017),
+(52, 'TC1017', 1, 22314, 'Martha Sordia S', 57, 32, 14, 8, 12, 2017),
+(53, 'TC1017', 10, 25600, 'Mar?a Concepci?n Villar C', 49, 38, 19, 8, 12, 2017),
+(54, 'TC1017', 11, 25601, 'Mar?a Concepci?n Villar C', 49, 36, 26, 8, 12, 2017),
+(55, 'TC1017', 12, 25598, 'Cristina Ver?nica Gonz?lez C', 11, 23, 33, 8, 12, 2017),
+(56, 'TC1017', 13, 23101, 'Alejandro Parra B', 2, 25, 18, 8, 12, 2017),
+(57, 'TC1017', 15, 22315, 'Margarita Toro P', 48, 28, 9, 8, 12, 2017),
+(58, 'TC1017', 16, 22316, 'Ver?nica Nelly Castillo E', 75, 32, 14, 8, 12, 2017),
+(59, 'TC1017', 17, 25599, 'Cristina Ver?nica Gonz?lez C', 11, 26, 14, 8, 12, 2017),
+(60, 'TC1017', 18, 23240, 'Martha Sordia S', 57, 34, 33, 8, 12, 2017),
+(61, 'TC1017', 19, 23226, 'Martha Sordia S', 57, 35, 37, 8, 12, 2017),
+(62, 'TC1017', 2, 25597, 'Armandina Juana Leal F', 7, 27, 2, 8, 12, 2017),
+(63, 'TC1017', 20, 25595, 'Jorge Anibal Quishpe A', 30, 38, 37, 8, 12, 2017),
+(64, 'TC1017', 3, 25596, 'Armandina Juana Leal F', 7, 27, 8, 8, 12, 2017),
+(65, 'TC1017', 4, 22529, 'Mar?a del Carmen P?manes F', 51, 32, 27, 8, 12, 2017),
+(66, 'TC1017', 6, 16568, 'Mar?a E Garza L', 52, 34, 34, 8, 12, 2017),
+(67, 'TC1017', 7, 23239, 'Delia Mar?a Soledad Castro R', 13, 37, 9, 8, 12, 2017),
+(68, 'TC1017', 8, 23225, 'Dalia Ivonne Fierro N', 12, 37, 37, 8, 12, 2017),
+(69, 'TC1018', 1, 23102, 'Delia Mar?a Soledad Castro R', 13, 23, 8, 8, 12, 2017),
+(70, 'TC1018', 2, 25604, 'Delia Mar?a Soledad Castro R', 13, 33, 15, 8, 12, 2017),
+(71, 'TC1018', 3, 25603, 'Luis Humberto Gonz?lez G', 43, 22, 37, 8, 12, 2017),
+(72, 'TC1018', 4, 25602, 'Luis Humberto Gonz?lez G', 43, 36, 4, 8, 12, 2017),
+(73, 'TC1018', 5, 22117, 'Delia Mar?a Soledad Castro R', 13, 8, 34, 8, 12, 2017),
+(74, 'TC1018', 6, 22484, 'Luis Humberto Gonz?lez G', 43, 35, 9, 8, 12, 2017),
+(75, 'TC1019', 2, 23227, 'Juan Ra?l Esparza M', 36, 35, 18, 8, 12, 2017),
+(76, 'TC1019', 3, 23092, 'Juan Ra?l Esparza M', 36, 38, 25, 8, 12, 2017),
+(77, 'TC1019', 4, 22485, 'Jakeline Marcos A', 26, 28, 2, 8, 12, 2017),
+(78, 'TC1019', 5, 22486, 'Silvia Iliana Ram?rez R', 73, 35, 18, 8, 12, 2017),
+(79, 'TC1019', 6, 23789, 'Eduardo G?mez S', 14, 18, 34, 8, 12, 2017),
+(80, 'TC1020', 1, 23241, 'Lorena G G?mez M', 41, 27, 15, 8, 12, 2017),
+(81, 'TC1020', 2, 22398, 'Lorena G G?mez M', 41, 23, 26, 8, 12, 2017),
+(82, 'TC1020', 3, 23242, 'Juan Ra?l Esparza M', 36, 24, 6, 8, 12, 2017),
+(83, 'TC1021', 1, 22399, 'Gerardo A C?rdenas C', 20, 29, 31, 8, 12, 2017),
+(84, 'TC1021', 2, 22530, 'Lorena Beatriz Mart?nez E', 40, 28, 9, 8, 12, 2017),
+(85, 'TC1022', 1, 22118, 'Elda Guadalupe Quiroga G', 15, 101, 9, 8, 12, 2017),
+(86, 'TC1022', 2, 33272, 'Claudia Aja L', 10, 21, 9, 8, 12, 2017),
+(87, 'TC1025', 1, 22531, 'Lorena Beatriz Mart?nez E', 40, 15, 26, 8, 12, 2017),
+(88, 'TC1026', 1, 23426, 'Jaime Mart?nez G', 25, 15, 9, 8, 12, 2017),
+(89, 'TC2004', 1, 27718, 'Antonio Javier Mejorado C', 6, 32, 6, 8, 12, 2017),
+(90, 'TC2004', 3, 23228, 'Silvia Iliana Ram?rez R', 73, 34, 14, 8, 12, 2017),
+(91, 'TC2004', 4, 22532, 'Staff', 74, 0, 39, 8, 12, 2017),
+(92, 'TC2004', 5, 23775, 'Antonio Javier Mejorado C', 6, 34, 20, 8, 12, 2017),
+(93, 'TC2004', 650, 32783, 'Jakeline Marcos A', 26, 9, 39, 8, 12, 2017),
+(94, 'TC2006', 1, 25608, 'Santiago Enrique Conant P', 71, 36, 36, 8, 12, 2017),
+(95, 'TC2006', 2, 25609, 'Jos? Carlos Ortiz B', 31, 36, 9, 8, 12, 2017),
+(96, 'TC2007', 1, 23229, 'Ra?l Valente Ram?rez V', 67, 19, 9, 8, 12, 2017),
+(97, 'TC2007', 2, 23103, 'Lorena Beatriz Mart?nez E', 40, 32, 4, 8, 12, 2017),
+(98, 'TC2007', 700, 31394, 'Staff', 74, 0, 21, 8, 12, 2017),
+(99, 'TC2008', 1, 31396, 'Jos? Ignacio Juan de Icaza A', 32, 33, 2, 8, 12, 2017),
+(100, 'TC2008', 2, 31397, 'Jos? Ignacio Juan de Icaza A', 32, 34, 4, 8, 12, 2017),
+(101, 'TC2008', 3, 31398, 'Jos? Ignacio Juan de Icaza A', 32, 34, 5, 8, 12, 2017),
+(102, 'TC2009', 1, 16475, 'Alejandro Parra B', 2, 30, 34, 8, 12, 2017),
+(103, 'TC2011', 1, 25611, 'Leonardo Garrido L', 39, 31, 15, 8, 12, 2017),
+(104, 'TC2011', 2, 25612, 'Leonardo Garrido L', 39, 28, 19, 8, 12, 2017),
+(105, 'TC2016', 1, 22533, 'Mar?a E Garza L', 52, 20, 33, 8, 12, 2017),
+(106, 'TC2016', 2, 23104, 'Mar?a E Garza L', 52, 30, 8, 8, 12, 2017),
+(107, 'TC2016', 3, 25614, 'Mar?a E Garza L', 52, 30, 18, 8, 12, 2017),
+(108, 'TC2016', 4, 25613, 'Delia Mar?a Soledad Castro R', 13, 37, 18, 8, 12, 2017),
+(109, 'TC2017', 1, 23105, 'Rom?n Mart?nez M', 69, 23, 37, 8, 12, 2017),
+(110, 'TC2017', 2, 25615, 'Luis Humberto Gonz?lez G', 43, 30, 8, 8, 12, 2017),
+(111, 'TC2017', 3, 34037, 'Luis Humberto Gonz?lez G', 43, 20, 36, 8, 12, 2017),
+(112, 'TC2018', 2, 23093, 'Mar?a Raquel Landa C', 54, 31, 36, 8, 12, 2017),
+(113, 'TC2018', 3, 23660, 'Pablo Daniel D?az L', 61, 25, 36, 8, 12, 2017),
+(114, 'TC2018', 4, 26263, 'Rafael Emilio Davalos V', 64, 30, 37, 8, 12, 2017),
+(115, 'TC2019', 1, 21117, 'Ivan Mauricio Amaya C', 24, 20, 18, 8, 12, 2017),
+(116, 'TC2019', 2, 22534, 'Juan Ra?l Esparza M', 36, 36, 2, 8, 12, 2017),
+(117, 'TC2020', 1, 25617, 'Ram?n Felipe Brena P', 66, 32, 36, 8, 12, 2017),
+(118, 'TC2020', 2, 25616, 'Alejandro Rosales P', 3, 36, 8, 8, 12, 2017),
+(119, 'TC2020', 3, 34002, 'Francisco J Cant? O', 18, 20, 14, 8, 12, 2017),
+(120, 'TC2022', 1, 25619, 'Pablo Daniel D?az L', 61, 30, 10, 8, 12, 2017),
+(121, 'TC2022', 2, 25618, 'Pablo Daniel D?az L', 61, 32, 9, 8, 12, 2017),
+(122, 'TC2022', 3, 23662, 'Kevin Brook Long', 37, 29, 8, 8, 12, 2017),
+(123, 'TC2022', 4, 31401, 'Staff', 74, 0, 39, 8, 12, 2017),
+(124, 'TC2022', 650, 32545, 'Jessica Izquierdo A', 28, 11, 39, 8, 12, 2017),
+(125, 'TC2024', 1, 25620, 'Yolanda Mart?nez T', 77, 18, 8, 8, 12, 2017),
+(126, 'TC2024', 2, 27975, 'Martha Sordia S', 57, 9, 15, 8, 12, 2017),
+(127, 'TC2024', 3, 25621, 'Yolanda Mart?nez T', 77, 12, 25, 8, 12, 2017),
+(128, 'TC2025', 1, 22400, 'Lorena Beatriz Mart?nez E', 40, 24, 37, 8, 12, 2017),
+(129, 'TC2025', 2, 22535, 'Alejandro Parra B', 2, 19, 25, 8, 12, 2017),
+(130, 'TC2026', 1, 16476, 'Jos? Ra?l P?rez C', 34, 31, 1, 8, 12, 2017),
+(131, 'TC2026', 2, 25622, 'Alfredo Salazar V', 5, 37, 33, 8, 12, 2017),
+(132, 'TC2026', 3, 27301, 'Staff', 74, 0, 39, 8, 12, 2017),
+(133, 'TC2026', 650, 32543, 'Jos? Ra?l P?rez C', 34, 11, 39, 8, 12, 2017),
+(134, 'TC2027', 1, 27291, 'Pablo Daniel D?az L', 61, 32, 4, 8, 12, 2017),
+(135, 'TC2027', 2, 23663, 'Alfredo Aranguren T', 4, 31, 23, 8, 12, 2017),
+(136, 'TC2027', 3, 27302, 'Staff', 74, 0, 39, 8, 12, 2017),
+(137, 'TC2027', 650, 32548, 'Alfredo Aranguren T', 4, 11, 39, 8, 12, 2017),
+(138, 'TC2028', 2, 23661, 'Norma Frida Roffe S', 60, 30, 29, 8, 12, 2017),
+(139, 'TC2029', 1, 31402, 'Yolanda Mart?nez T', 77, 4, 8, 8, 12, 2017),
+(140, 'TC3002', 1, 25624, 'Jakeline Marcos A', 26, 27, 8, 8, 12, 2017),
+(141, 'TC3002', 3, 24403, 'H?ctor de Luna B', 22, 37, 29, 8, 12, 2017),
+(142, 'TC3002', 4, 33920, 'H?ctor de Luna B', 22, 11, 30, 8, 12, 2017),
+(143, 'TC3007', 1, 34525, 'Rafael Salazar C', 65, 1, 8, 8, 12, 2017),
+(144, 'TC3018', 1, 30955, 'Manuel Eduardo Izquierdo M', 45, 4, 39, 8, 12, 2017),
+(145, 'TC3020', 1, 25627, 'Leonardo Garrido L', 39, 12, 14, 8, 12, 2017),
+(146, 'TC3021', 1, 23870, 'Carlos Astengo N', 9, 7, 39, 8, 12, 2017),
+(147, 'TC3022', 2, 31403, 'Ma. Guadalupe Roque D', 44, 1, 36, 8, 12, 2017),
+(148, 'TC3022', 3, 26854, 'Ra?l Valente Ram?rez V', 67, 43, 6, 8, 12, 2017),
+(149, 'TC3023', 1, 25628, 'Manuel Valenzuela R', 47, 14, 25, 8, 12, 2017),
+(150, 'TC3024', 1, 31404, 'Ricardo Manuel Marmolejo G', 68, 6, 39, 8, 12, 2017),
+(151, 'TC3025', 1, 25625, 'Leonardo Garrido L', 39, 11, 9, 8, 12, 2017),
+(152, 'TC3028', 1, 25630, 'Pablo G Ram?rez F', 62, 24, 4, 8, 12, 2017),
+(153, 'TC3029', 1, 28944, 'Alejandro Parra B', 2, 6, 2, 8, 12, 2017),
+(154, 'TC3041', 1, 25632, 'Juan Carlos Lavariega J', 35, 20, 28, 8, 12, 2017),
+(155, 'TC3041', 3, 25631, 'Juan Carlos Lavariega J', 35, 22, 8, 8, 12, 2017),
+(156, 'TC3045', 1, 31405, 'Rafael Salazar C', 65, 30, 18, 8, 12, 2017),
+(157, 'TC3045', 2, 25633, 'Rafael Salazar C', 65, 23, 36, 8, 12, 2017),
+(158, 'TC3046', 700, 31406, 'Staff', 74, 0, 8, 8, 12, 2017),
+(159, 'TC3047', 1, 23094, 'Staff', 74, 0, 4, 8, 12, 2017),
+(160, 'TC3048', 1, 25634, 'H?ctor Gibr?n Ceballos C', 23, 24, 2, 8, 12, 2017),
+(161, 'TC3048', 2, 31407, 'H?ctor Gibr?n Ceballos C', 23, 12, 8, 8, 12, 2017),
+(162, 'TC3049', 1, 25635, 'Juan Carlos Lavariega J', 35, 32, 14, 8, 12, 2017),
+(163, 'TC3049', 2, 33921, 'Juan Carlos Lavariega J', 35, 13, 29, 8, 12, 2017),
+(164, 'TC3050', 1, 25636, 'Jos? Luis Gordillo M', 33, 20, 25, 8, 12, 2017),
+(165, 'TC3051', 1, 28945, 'Alejandro Parra B', 2, 0, 2, 8, 12, 2017),
+(166, 'TC3052', 1, 23106, 'Alfredo Salazar V', 5, 23, 34, 8, 12, 2017),
+(167, 'TC3052', 2, 23095, 'Alfredo Salazar V', 5, 20, 26, 8, 12, 2017),
+(168, 'TC3053', 1, 25637, 'Francisco Javier Hern?ndez P', 19, 2, 31, 8, 12, 2017),
+(169, 'TC3054', 1, 22560, 'Lorena G G?mez M', 41, 19, 8, 8, 12, 2017),
+(170, 'TC3054', 2, 34592, 'Rafael Salazar C', 65, 19, 8, 8, 12, 2017),
+(171, 'TC3055', 700, 29686, 'Faustino Bejarano R', 17, 4, 7, 8, 12, 2017),
+(172, 'TC3060', 1, 22965, 'Xochitl L Morales R', 76, 13, 33, 8, 12, 2017),
+(173, 'TC3061', 1, 27974, 'Martha Sordia S', 57, 4, 15, 8, 12, 2017),
+(174, 'TC3063', 1, 24038, 'Manuel Ter?n M', 46, 9, 14, 8, 12, 2017),
+(175, 'TC1001', 1, 25586, 'Ma. Guadalupe Roque D', 44, 32, 6, 1, 5, 2017),
+(176, 'TC1001', 10, 22324, 'Mar?a Raquel Landa C', 54, 32, 4, 1, 5, 2017),
+(177, 'TC1001', 11, 23097, 'Staff', 74, 28, 34, 1, 5, 2017),
+(178, 'TC1001', 12, 25583, 'Sergio Trinidad Guimond L', 72, 35, 33, 1, 5, 2017),
+(179, 'TC1001', 13, 23222, 'Mar?a Imelda Vald?z S', 53, 37, 33, 1, 5, 2017),
+(180, 'TC1001', 14, 22522, 'Francisco Javier Hern?ndez P', 19, 30, 36, 1, 5, 2017),
+(181, 'TC1001', 15, 22322, 'Sandra Patricia Trevi?o A', 70, 27, 28, 1, 5, 2017),
+(182, 'TC1001', 16, 25584, 'Mar?a Raquel Landa C', 54, 36, 9, 1, 5, 2017),
+(183, 'TC1001', 17, 23236, 'Ma. Guadalupe Roque D', 44, 32, 34, 1, 5, 2017),
+(184, 'TC1001', 18, 22323, 'Sergio Trinidad Guimond L', 72, 31, 34, 1, 5, 2017),
+(185, 'TC1001', 19, 33826, 'Sandra Patricia Trevi?o A', 70, 25, 31, 1, 5, 2017),
+(186, 'TC1001', 2, 25581, 'Sergio Trinidad Guimond L', 72, 32, 37, 1, 5, 2017),
+(187, 'TC1001', 20, 34012, 'Jorge Alejandro Alvarez B', 29, 30, 26, 1, 5, 2017),
+(188, 'TC1001', 21, 34001, 'Jorge Alejandro Alvarez B', 29, 10, 30, 1, 5, 2017),
+(189, 'TC1001', 3, 25582, 'Sandra Patricia Trevi?o A', 70, 31, 30, 1, 5, 2017),
+(190, 'TC1001', 4, 23237, 'Mar?a Sof?a Roque D', 55, 32, 25, 1, 5, 2017),
+(191, 'TC1001', 5, 23220, 'Jorge Anibal Quishpe A', 30, 30, 14, 1, 5, 2017),
+(192, 'TC1001', 6, 25587, 'Mar?a del C Cabello P', 50, 38, 15, 1, 5, 2017),
+(193, 'TC1001', 7, 23221, 'Martha Sordia S', 57, 36, 34, 1, 5, 2017),
+(194, 'TC1001', 8, 22521, 'Mar?a Concepci?n Villar C', 49, 38, 15, 1, 5, 2017),
+(195, 'TC1001', 9, 25585, 'Laura Patricia Salazar C', 38, 30, 33, 1, 5, 2017),
+(196, 'TC1021', 1, 22399, 'Gerardo A C?rdenas C', 20, 29, 31, 1, 5, 2017),
+(197, 'TC1021', 2, 22530, 'Lorena Beatriz Mart?nez E', 40, 28, 9, 1, 5, 2017),
+(198, 'TC1022', 1, 22118, 'Elda Guadalupe Quiroga G', 15, 101, 9, 1, 5, 2017),
+(199, 'TC1022', 2, 33272, 'Claudia Aja L', 10, 21, 9, 1, 5, 2017),
+(200, 'TC2011', 1, 25611, 'Leonardo Garrido L', 39, 31, 15, 1, 5, 2017),
+(201, 'TC2011', 2, 25612, 'Leonardo Garrido L', 39, 28, 19, 1, 5, 2017),
+(202, 'TC2022', 1, 25619, 'Pablo Daniel D?az L', 61, 30, 10, 1, 5, 2017),
+(203, 'TC2022', 2, 25618, 'Pablo Daniel D?az L', 61, 32, 9, 1, 5, 2017),
+(204, 'TC2022', 3, 23662, 'Kevin Brook Long', 37, 29, 8, 1, 5, 2017),
+(205, 'TC2022', 4, 31401, 'Staff', 74, 0, 39, 1, 5, 2017),
+(206, 'TC2022', 650, 32545, 'Jessica Izquierdo A', 28, 11, 39, 1, 5, 2017),
+(207, 'TC3002', 1, 25624, 'Jakeline Marcos A', 26, 27, 8, 1, 5, 2017),
+(208, 'TC3002', 3, 24403, 'H?ctor de Luna B', 22, 37, 29, 1, 5, 2017),
+(209, 'TC3002', 4, 33920, 'H?ctor de Luna B', 22, 11, 30, 1, 5, 2017),
+(210, 'TC3021', 1, 23870, 'Carlos Astengo N', 9, 7, 39, 1, 5, 2017),
+(211, 'TC3022', 2, 31403, 'Ma. Guadalupe Roque D', 44, 1, 36, 1, 5, 2017),
+(212, 'TC3022', 3, 26854, 'Ra?l Valente Ram?rez V', 67, 43, 6, 1, 5, 2017),
+(213, 'TC3041', 1, 25632, 'Juan Carlos Lavariega J', 35, 20, 28, 1, 5, 2017),
+(214, 'TC3041', 3, 25631, 'Juan Carlos Lavariega J', 35, 22, 8, 1, 5, 2017),
+(215, 'TC3051', 1, 28945, 'Alejandro Parra B', 2, 0, 2, 1, 5, 2017),
+(216, 'TC3052', 1, 23106, 'Alfredo Salazar V', 5, 23, 34, 1, 5, 2017),
+(217, 'TC3052', 2, 23095, 'Alfredo Salazar V', 5, 20, 26, 1, 5, 2017),
+(218, 'TC3061', 1, 27974, 'Martha Sordia S', 57, 4, 15, 1, 5, 2017),
+(219, 'TC1003', 1, 23098, 'Alejandra Gonz?lez A', 1, 26, 2, 8, 12, 2016),
+(220, 'TC1003', 2, 22523, 'Alejandra Gonz?lez A', 1, 26, 8, 8, 12, 2016),
+(221, 'TC1003', 3, 23238, 'Rafael Emilio Davalos V', 64, 24, 36, 8, 12, 2016),
+(222, 'TC1003', 4, 22105, 'Alejandra Gonz?lez A', 1, 21, 36, 8, 12, 2016),
+(223, 'TC1003', 5, 23223, 'Jos? Ra?l P?rez C', 34, 26, 8, 8, 12, 2016),
+(224, 'TC1003', 6, 25588, 'Jos? Ra?l P?rez C', 34, 15, 36, 8, 12, 2016),
+(225, 'TC1014', 10, 22116, 'Javier Alberto Giese R', 27, 17, 15, 8, 12, 2016),
+(226, 'TC1014', 11, 23224, 'Alfredo Salazar V', 5, 26, 19, 8, 12, 2016),
+(227, 'TC1014', 14, 25593, 'Ma. Guadalupe Roque D', 44, 27, 4, 8, 12, 2016),
+(228, 'TC1014', 16, 25591, 'Lorena Sof?a Ram?rez N', 42, 26, 15, 8, 12, 2016),
+(229, 'TC1014', 2, 23090, 'Bertha Laura Garc?a d', 8, 21, 4, 8, 12, 2016),
+(230, 'TC1014', 3, 22524, 'Bertha Laura Garc?a d', 8, 20, 15, 8, 12, 2016),
+(231, 'TC1014', 4, 23099, 'Antonio Javier Mejorado C', 6, 25, 36, 8, 12, 2016),
+(232, 'TC1014', 5, 25589, 'Yolanda Mart?nez T', 77, 27, 2, 8, 12, 2016),
+(233, 'TC1014', 6, 25590, 'Ma. Guadalupe Roque D', 44, 27, 37, 8, 12, 2016),
+(234, 'TC1014', 8, 25592, 'Yolanda Mart?nez T', 77, 23, 6, 8, 12, 2016),
+(235, 'TC1014', 9, 22525, 'Antonio Javier Mejorado C', 6, 27, 2, 8, 12, 2016),
+(236, 'TC2004', 1, 27718, 'Antonio Javier Mejorado C', 6, 32, 6, 8, 12, 2016),
+(237, 'TC2004', 3, 23228, 'Silvia Iliana Ram?rez R', 73, 34, 14, 8, 12, 2016),
+(238, 'TC2004', 4, 22532, 'Staff', 74, 0, 39, 8, 12, 2016),
+(239, 'TC2004', 5, 23775, 'Antonio Javier Mejorado C', 6, 34, 20, 8, 12, 2016),
+(240, 'TC2004', 650, 32783, 'Jakeline Marcos A', 26, 9, 39, 8, 12, 2016),
+(241, 'TC2024', 1, 25620, 'Yolanda Mart?nez T', 77, 18, 8, 8, 12, 2016),
+(242, 'TC2024', 2, 27975, 'Martha Sordia S', 57, 9, 15, 8, 12, 2016),
+(243, 'TC2024', 3, 25621, 'Yolanda Mart?nez T', 77, 12, 25, 8, 12, 2016),
+(244, 'TC3023', 1, 25628, 'Manuel Valenzuela R', 47, 14, 25, 8, 12, 2016),
+(245, 'TC3024', 1, 31404, 'Ricardo Manuel Marmolejo G', 68, 6, 39, 8, 12, 2016),
+(246, 'TC3053', 1, 25637, 'Francisco Javier Hern?ndez P', 19, 2, 31, 8, 12, 2016),
+(247, 'TC3054', 1, 22560, 'Lorena G G?mez M', 41, 19, 8, 8, 12, 2016),
+(248, 'TC3054', 2, 34592, 'Rafael Salazar C', 65, 19, 8, 8, 12, 2016),
+(249, 'TC3063', 1, 24038, 'Manuel Ter?n M', 46, 9, 14, 8, 12, 2016),
+(250, 'TC1015', 1, 25594, 'Cristina Ver?nica Gonz?lez C', 11, 26, 18, 1, 5, 2016),
+(251, 'TC1015', 2, 22396, 'Moraima Campbell D', 59, 23, 8, 1, 5, 2016),
+(252, 'TC1015', 3, 23091, 'Mart?n de Jes?s Gonz?lez M', 58, 24, 37, 1, 5, 2016),
+(253, 'TC1015', 5, 22526, 'Enrique Garc?a C', 16, 33, 14, 1, 5, 2016),
+(254, 'TC1015', 6, 23495, 'Mart?n de Jes?s Gonz?lez M', 58, 25, 4, 1, 5, 2016),
+(255, 'TC1016', 1, 23100, 'Francisco Javier Hern?ndez P', 19, 30, 4, 1, 5, 2016),
+(256, 'TC1016', 1080, 22024, 'Staff', 74, 0, 3, 1, 5, 2016),
+(257, 'TC1016', 1800, 22189, 'Gilberto Hern?ndez H', 21, 0, 3, 1, 5, 2016),
+(258, 'TC1016', 1801, 22022, 'Mario Isidro De la Fuente M', 56, 9, 3, 1, 5, 2016),
+(259, 'TC1016', 1802, 22020, 'Pedro N?jera G', 63, 0, 3, 1, 5, 2016),
+(260, 'TC1016', 2, 22109, 'Rafael Emilio Davalos V', 64, 30, 2, 1, 5, 2016),
+(261, 'TC1016', 3, 22527, 'Rafael Emilio Davalos V', 64, 22, 33, 1, 5, 2016),
+(262, 'TC1016', 4, 22397, 'Rafael Emilio Davalos V', 64, 23, 34, 1, 5, 2016),
+(263, 'TC1025', 1, 22531, 'Lorena Beatriz Mart?nez E', 40, 15, 26, 1, 5, 2016),
+(264, 'TC1026', 1, 23426, 'Jaime Mart?nez G', 25, 15, 9, 1, 5, 2016),
+(265, 'TC2006', 1, 25608, 'Santiago Enrique Conant P', 71, 36, 36, 1, 5, 2016),
+(266, 'TC2006', 2, 25609, 'Jos? Carlos Ortiz B', 31, 36, 9, 1, 5, 2016),
+(267, 'TC2016', 1, 22533, 'Mar?a E Garza L', 52, 20, 33, 1, 5, 2016),
+(268, 'TC2016', 2, 23104, 'Mar?a E Garza L', 52, 30, 8, 1, 5, 2016),
+(269, 'TC2016', 3, 25614, 'Mar?a E Garza L', 52, 30, 18, 1, 5, 2016),
+(270, 'TC2016', 4, 25613, 'Delia Mar?a Soledad Castro R', 13, 37, 18, 1, 5, 2016),
+(271, 'TC2025', 1, 22400, 'Lorena Beatriz Mart?nez E', 40, 24, 37, 1, 5, 2016),
+(272, 'TC2025', 2, 22535, 'Alejandro Parra B', 2, 19, 25, 1, 5, 2016),
+(273, 'TC2026', 1, 16476, 'Jos? Ra?l P?rez C', 34, 31, 1, 1, 5, 2016),
+(274, 'TC2026', 2, 25622, 'Alfredo Salazar V', 5, 37, 33, 1, 5, 2016),
+(275, 'TC2026', 3, 27301, 'Staff', 74, 0, 39, 1, 5, 2016),
+(276, 'TC2026', 650, 32543, 'Jos? Ra?l P?rez C', 34, 11, 39, 1, 5, 2016),
+(277, 'TC3025', 1, 25625, 'Leonardo Garrido L', 39, 11, 9, 1, 5, 2016),
+(278, 'TC3045', 1, 31405, 'Rafael Salazar C', 65, 30, 18, 1, 5, 2016),
+(279, 'TC3045', 2, 25633, 'Rafael Salazar C', 65, 23, 36, 1, 5, 2016),
+(280, 'TC3046', 700, 31406, 'Staff', 74, 0, 8, 1, 5, 2016),
+(281, 'TC3055', 700, 29686, 'Faustino Bejarano R', 17, 4, 7, 1, 5, 2016),
+(282, 'TC1017', 1, 22314, 'Martha Sordia S', 57, 32, 14, 8, 12, 2015),
+(283, 'TC1017', 10, 25600, 'Mar?a Concepci?n Villar C', 49, 38, 19, 8, 12, 2015),
+(284, 'TC1017', 11, 25601, 'Mar?a Concepci?n Villar C', 49, 36, 26, 8, 12, 2015),
+(285, 'TC1017', 12, 25598, 'Cristina Ver?nica Gonz?lez C', 11, 23, 33, 8, 12, 2015),
+(286, 'TC1017', 13, 23101, 'Alejandro Parra B', 2, 25, 18, 8, 12, 2015),
+(287, 'TC1017', 15, 22315, 'Margarita Toro P', 48, 28, 9, 8, 12, 2015),
+(288, 'TC1017', 16, 22316, 'Ver?nica Nelly Castillo E', 75, 32, 14, 8, 12, 2015),
+(289, 'TC1017', 17, 25599, 'Cristina Ver?nica Gonz?lez C', 11, 26, 14, 8, 12, 2015),
+(290, 'TC1017', 18, 23240, 'Martha Sordia S', 57, 34, 33, 8, 12, 2015),
+(291, 'TC1017', 19, 23226, 'Martha Sordia S', 57, 35, 37, 8, 12, 2015),
+(292, 'TC1017', 2, 25597, 'Armandina Juana Leal F', 7, 27, 2, 8, 12, 2015),
+(293, 'TC1017', 20, 25595, 'Jorge Anibal Quishpe A', 30, 38, 37, 8, 12, 2015),
+(294, 'TC1017', 3, 25596, 'Armandina Juana Leal F', 7, 27, 8, 8, 12, 2015),
+(295, 'TC1017', 4, 22529, 'Mar?a del Carmen P?manes F', 51, 32, 27, 8, 12, 2015),
+(296, 'TC1017', 6, 16568, 'Mar?a E Garza L', 52, 34, 34, 8, 12, 2015),
+(297, 'TC1017', 7, 23239, 'Delia Mar?a Soledad Castro R', 13, 37, 9, 8, 12, 2015),
+(298, 'TC1017', 8, 23225, 'Dalia Ivonne Fierro N', 12, 37, 37, 8, 12, 2015),
+(299, 'TC1018', 1, 23102, 'Delia Mar?a Soledad Castro R', 13, 23, 8, 8, 12, 2015),
+(300, 'TC1018', 2, 25604, 'Delia Mar?a Soledad Castro R', 13, 33, 15, 8, 12, 2015),
+(301, 'TC1018', 3, 25603, 'Luis Humberto Gonz?lez G', 43, 22, 37, 8, 12, 2015),
+(302, 'TC1018', 4, 25602, 'Luis Humberto Gonz?lez G', 43, 36, 4, 8, 12, 2015),
+(303, 'TC1018', 5, 22117, 'Delia Mar?a Soledad Castro R', 13, 8, 34, 8, 12, 2015),
+(304, 'TC2007', 1, 23229, 'Ra?l Valente Ram?rez V', 67, 19, 9, 8, 12, 2015),
+(305, 'TC2007', 2, 23103, 'Lorena Beatriz Mart?nez E', 40, 32, 4, 8, 12, 2015),
+(306, 'TC2007', 700, 31394, 'Staff', 74, 0, 21, 8, 12, 2015),
+(307, 'TC2008', 1, 31396, 'Jos? Ignacio Juan de Icaza A', 32, 33, 2, 8, 12, 2015),
+(308, 'TC2008', 2, 31397, 'Jos? Ignacio Juan de Icaza A', 32, 34, 4, 8, 12, 2015),
+(309, 'TC2008', 3, 31398, 'Jos? Ignacio Juan de Icaza A', 32, 34, 5, 8, 12, 2015),
+(310, 'TC2017', 1, 23105, 'Rom?n Mart?nez M', 69, 23, 37, 8, 12, 2015),
+(311, 'TC2017', 2, 25615, 'Luis Humberto Gonz?lez G', 43, 30, 8, 8, 12, 2015),
+(312, 'TC2017', 3, 34037, 'Luis Humberto Gonz?lez G', 43, 20, 36, 8, 12, 2015),
+(313, 'TC2018', 2, 23093, 'Mar?a Raquel Landa C', 54, 31, 36, 8, 12, 2015),
+(314, 'TC2018', 3, 23660, 'Pablo Daniel D?az L', 61, 25, 36, 8, 12, 2015),
+(315, 'TC2018', 4, 26263, 'Rafael Emilio Davalos V', 64, 30, 37, 8, 12, 2015),
+(316, 'TC2027', 1, 27291, 'Pablo Daniel D?az L', 61, 32, 4, 8, 12, 2015),
+(317, 'TC2027', 2, 23663, 'Alfredo Aranguren T', 4, 31, 23, 8, 12, 2015),
+(318, 'TC2027', 3, 27302, 'Staff', 74, 0, 39, 8, 12, 2015),
+(319, 'TC2027', 650, 32548, 'Alfredo Aranguren T', 4, 11, 39, 8, 12, 2015),
+(320, 'TC2028', 2, 23661, 'Norma Frida Roffe S', 60, 30, 29, 8, 12, 2015),
+(321, 'TC3007', 1, 34525, 'Rafael Salazar C', 65, 1, 8, 8, 12, 2015),
+(322, 'TC3018', 1, 30955, 'Manuel Eduardo Izquierdo M', 45, 4, 39, 8, 12, 2015),
+(323, 'TC3028', 1, 25630, 'Pablo G Ram?rez F', 62, 24, 4, 8, 12, 2015),
+(324, 'TC3047', 1, 23094, 'Staff', 74, 0, 4, 8, 12, 2015),
+(325, 'TC3048', 1, 25634, 'H?ctor Gibr?n Ceballos C', 23, 24, 2, 8, 12, 2015),
+(326, 'TC3048', 2, 31407, 'H?ctor Gibr?n Ceballos C', 23, 12, 8, 8, 12, 2015),
+(327, 'TC1019', 2, 23227, 'Juan Ra?l Esparza M', 36, 35, 18, 1, 5, 2015),
+(328, 'TC1019', 3, 23092, 'Juan Ra?l Esparza M', 36, 38, 25, 1, 5, 2015),
+(329, 'TC1019', 4, 22485, 'Jakeline Marcos A', 26, 28, 2, 1, 5, 2015),
+(330, 'TC1019', 5, 22486, 'Silvia Iliana Ram?rez R', 73, 35, 18, 1, 5, 2015),
+(331, 'TC1019', 6, 23789, 'Eduardo G?mez S', 14, 18, 34, 1, 5, 2015),
+(332, 'TC1020', 1, 23241, 'Lorena G G?mez M', 41, 27, 15, 1, 5, 2015),
+(333, 'TC1020', 2, 22398, 'Lorena G G?mez M', 41, 23, 26, 1, 5, 2015),
+(334, 'TC1020', 3, 23242, 'Juan Ra?l Esparza M', 36, 24, 6, 1, 5, 2015),
+(335, 'TC2009', 1, 16475, 'Alejandro Parra B', 2, 30, 34, 1, 5, 2015),
+(336, 'TC2019', 1, 21117, 'Ivan Mauricio Amaya C', 24, 20, 18, 1, 5, 2015),
+(337, 'TC2019', 2, 22534, 'Juan Ra?l Esparza M', 36, 36, 2, 1, 5, 2015),
+(338, 'TC2020', 1, 25617, 'Ram?n Felipe Brena P', 66, 32, 36, 1, 5, 2015),
+(339, 'TC2020', 2, 25616, 'Alejandro Rosales P', 3, 36, 8, 1, 5, 2015),
+(340, 'TC2020', 3, 34002, 'Francisco J Cant? O', 18, 20, 14, 1, 5, 2015),
+(341, 'TC2029', 1, 31402, 'Yolanda Mart?nez T', 77, 4, 8, 1, 5, 2015),
+(342, 'TC3020', 1, 25627, 'Leonardo Garrido L', 39, 12, 14, 1, 5, 2015),
+(343, 'TC3029', 1, 28944, 'Alejandro Parra B', 2, 6, 2, 1, 5, 2015),
+(344, 'TC3049', 1, 25635, 'Juan Carlos Lavariega J', 35, 32, 14, 1, 5, 2015),
+(345, 'TC3049', 2, 33921, 'Juan Carlos Lavariega J', 35, 13, 29, 1, 5, 2015),
+(346, 'TC3050', 1, 25636, 'Jos? Luis Gordillo M', 33, 20, 25, 1, 5, 2015),
+(347, 'TC3060', 1, 22965, 'Xochitl L Morales R', 76, 13, 33, 1, 5, 2015);
+
+--
+-- Índices para tablas volcadas
+--
+
+--
+-- Indices de la tabla `app_campo_procedimiento`
+--
+ALTER TABLE `app_campo_procedimiento`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indices de la tabla `app_campo_reporte`
+--
+ALTER TABLE `app_campo_reporte`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indices de la tabla `app_procedimiento`
+--
+ALTER TABLE `app_procedimiento`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `nombre_procedimiento` (`nombre_procedimiento`);
+
+--
+-- Indices de la tabla `app_reporte`
+--
+ALTER TABLE `app_reporte`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `nombre_reporte` (`nombre_reporte`);
+
+--
+-- Indices de la tabla `app_reporte_procedimiento`
+--
+ALTER TABLE `app_reporte_procedimiento`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indices de la tabla `app_tabla`
+--
+ALTER TABLE `app_tabla`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `nombre_tabla` (`nombre_tabla`);
+
+--
+-- Indices de la tabla `cursos`
+--
+ALTER TABLE `cursos`
+  ADD PRIMARY KEY (`Clave`);
+
+--
+-- Indices de la tabla `cursosasignados`
+--
+ALTER TABLE `cursosasignados`
+  ADD PRIMARY KEY (`Id`),
+  ADD KEY `NominaProfe` (`NominaProfe`),
+  ADD KEY `IdHorario` (`IdHorario`),
+  ADD KEY `ClaveCurso` (`ClaveCurso`);
+
+--
+-- Indices de la tabla `horarios`
+--
+ALTER TABLE `horarios`
+  ADD PRIMARY KEY (`Id`);
+
+--
+-- Indices de la tabla `prefiereimpartir`
+--
+ALTER TABLE `prefiereimpartir`
+  ADD PRIMARY KEY (`Id`),
+  ADD KEY `NominaProfe` (`NominaProfe`),
+  ADD KEY `ClaveCurso` (`ClaveCurso`);
+
+--
+-- Indices de la tabla `profesor`
+--
+ALTER TABLE `profesor`
+  ADD PRIMARY KEY (`Nomina`);
+
+--
+-- Indices de la tabla `puedeimpartir`
+--
+ALTER TABLE `puedeimpartir`
+  ADD PRIMARY KEY (`Id`),
+  ADD KEY `NominaProfe` (`NominaProfe`),
+  ADD KEY `ClaveCurso` (`ClaveCurso`);
+
+--
+-- AUTO_INCREMENT de las tablas volcadas
+--
+
+--
+-- AUTO_INCREMENT de la tabla `app_campo_procedimiento`
+--
+ALTER TABLE `app_campo_procedimiento`
+  MODIFY `id` int(6) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=92;
+
+--
+-- AUTO_INCREMENT de la tabla `app_campo_reporte`
+--
+ALTER TABLE `app_campo_reporte`
+  MODIFY `id` int(6) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
+
+--
+-- AUTO_INCREMENT de la tabla `app_procedimiento`
+--
+ALTER TABLE `app_procedimiento`
+  MODIFY `id` int(6) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=94;
+
+--
+-- AUTO_INCREMENT de la tabla `app_reporte`
+--
+ALTER TABLE `app_reporte`
+  MODIFY `id` int(6) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+
+--
+-- AUTO_INCREMENT de la tabla `app_reporte_procedimiento`
+--
+ALTER TABLE `app_reporte_procedimiento`
+  MODIFY `id` int(6) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=151;
+
+--
+-- AUTO_INCREMENT de la tabla `app_tabla`
+--
+ALTER TABLE `app_tabla`
+  MODIFY `id` int(6) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+
+--
+-- Restricciones para tablas volcadas
+--
+
+--
+-- Filtros para la tabla `cursosasignados`
+--
+ALTER TABLE `cursosasignados`
+  ADD CONSTRAINT `cursosasignados_ibfk_1` FOREIGN KEY (`NominaProfe`) REFERENCES `profesor` (`Nomina`),
+  ADD CONSTRAINT `cursosasignados_ibfk_2` FOREIGN KEY (`IdHorario`) REFERENCES `horarios` (`Id`),
+  ADD CONSTRAINT `cursosasignados_ibfk_3` FOREIGN KEY (`ClaveCurso`) REFERENCES `cursos` (`Clave`);
+
+--
+-- Filtros para la tabla `prefiereimpartir`
+--
+ALTER TABLE `prefiereimpartir`
+  ADD CONSTRAINT `prefiereimpartir_ibfk_1` FOREIGN KEY (`NominaProfe`) REFERENCES `profesor` (`Nomina`),
+  ADD CONSTRAINT `prefiereimpartir_ibfk_2` FOREIGN KEY (`ClaveCurso`) REFERENCES `cursos` (`Clave`);
+
+--
+-- Filtros para la tabla `puedeimpartir`
+--
+ALTER TABLE `puedeimpartir`
+  ADD CONSTRAINT `puedeimpartir_ibfk_1` FOREIGN KEY (`NominaProfe`) REFERENCES `profesor` (`Nomina`),
+  ADD CONSTRAINT `puedeimpartir_ibfk_2` FOREIGN KEY (`ClaveCurso`) REFERENCES `cursos` (`Clave`);
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
