@@ -1,0 +1,131 @@
+Reporte001: Materias Actuales
+Input: Clave de la materia
+Output: Datos generales de la materia, los grupos que existen actualmente y los alumnos totales llevándola
+
+Procedimiento: SP_DatosDeUnaMateria (Datos Generales)
+	SELECT Clave, cursos.Nombre
+	FROM cursos
+	WHERE clave LIKE CONCAT('%',variable,'%')
+
+Procedimiento: SP_DatosDeLosGrupos (Datos Generales)
+	SELECT profesor.Nombre `Nombre del Profesor`, horarios.Horario, CRN,Poblacion AS `Alumnos`
+	FROM cursosasignados JOIN cursos ON ClaveCurso = Clave JOIN horarios ON  cursosasignados.IdHorario = horarios.id JOIN profesor ON cursosasignados.NominaProfe = profesor.Nomina
+	WHERE clavecurso LIKE CONCAT('%',variable,'%') AND MONTH(NOW()) >= semestreinicia  AND MONTH(NOW()) <= semestretermina AND YEAR(NOW()) = AnioSemestre
+	ORDER BY Poblacion DESC
+
+Procedimiento: SP_CuantosAlumnosLlevanUnaMateria (Alumnos Totales Cursando)
+	SELECT sum(poblacion) AS `Alumnos`
+	FROM cursosasignados
+	WHERE clavecurso LIKE CONCAT('%',variable,'%') AND MONTH(NOW()) >= semestreinicia  AND MONTH(now()) <= semestretermina AND  YEAR(NOW()) = AnioSemestre
+
+
+
+
+Reporte002: Datos De Materia En X Semestre
+Input: Semestre a buscar, consiste de 3 partes, primera es el mes que empieza el semestre, segundo el mes que termina y el último el año del semestre.
+Output: Los alumnos totales de ese semestre, los grupos que se llevaron a cabo con datos generales e información de cuantos grupos con cuántos alumnos.
+
+Procedimiento:SP_AlumnosTotalesEnXSemestre (Alumnos Totales)
+	SELECT SUM(poblacion) as 'Alumnos Totales'
+	FROM cursosasignados
+	WHERE var1 >= semestreinicia AND var2 <= semestretermina AND  var3 = AnioSemestre
+
+Procedimiento: SP_MateriasDeXSemestre (Materias En Este Semestre)
+	SELECT clavecurso AS 'Clave',cursos.Nombre AS 'Nombre de la Materia', profesor.Nombre `Nombre del Profesor`, horarios.Horario, CRN,Poblacion as `Alumnos`
+	FROM cursosasignados JOIN cursos ON ClaveCurso = Clave JOIN horarios ON  cursosasignados.IdHorario = horarios.id JOIN profesor ON cursosasignados.NominaProfe = profesor.Nomina
+	WHERE variable >= semestreinicia  AND var2 <= semestretermina AND  var3 = AnioSemestre AND poblacion > 0
+	ORDER BY poblacion DESC
+
+Procedimiento:SP_CuantosGruposEnXSemestre (Datos Generales De Los Grupos)
+	SELECT clavecurso AS 'Clave', cursos.Nombre AS 'Nombre de la Materia', COUNT(clavecurso) AS 'Grupos Totales', SUM(poblacion) AS 'Alumnos Totales'
+	FROM cursosasignados JOIN cursos ON clavecurso = clave
+	WHERE var1 >= semestreinicia  AND var2 <= semestretermina AND var3 = AnioSemestre
+	GROUP BY clavecurso, cursos.Nombre
+	HAVING SUM(poblacion) > 0
+	ORDER BY SUM(poblacion)  DESC
+
+
+
+
+Reporte003: Datos De Un Profesor 
+Input: Nomina del profesor a buscar
+Output: Datos generales del profesor, las materias que da el profesor, las materias que ha dado, las materias que puede dar y las que prefiere dar.km
+
+Procedimiento:SP_DatosProfesor (Datos Generales)
+	SELECT * 
+	FROM profesor
+	WHERE nomina = variable
+
+Procedimiento:SP_MateriasQueDaUnProfesorActualmente (Materia Que Da Actualmente)
+	SELECT cursosasignados.ClaveCurso AS 'Clave',cursos.Nombre AS Curso ,horarios.Horario,cursosasignados.Poblacion,cursosasignados.CRN
+	FROM cursosasignados JOIN cursos ON ClaveCurso = Clave JOIN horarios ON  cursosasignados.IdHorario = horarios.id JOIN profesor ON cursosasignados.NominaProfe = profesor.Nomina
+	WHERE profesor.nomina = variable  AND MONTH(NOW()) >= semestreinicia  AND MONTH(NOW()) <= semestretermina AND  YEAR(NOW()) = AnioSemestre
+	ORDER BY profesor.nomina ASC
+
+Procedimiento:SP_MateriasQueHaDadoUnProfesor (Materias Que Ha Dado)
+	SELECT cursosasignados.ClaveCurso AS 'Clave',cursos.Nombre AS Curso ,horarios.Horario,cursosasignados.Poblacion,cursosasignados.CRN, semestreinicia AS 'Inicio Semestre',semestretermina AS 'Termino de Semestre',aniosemestre AS 'Año', Ecoa5, Ecoa6, Ecoa7
+	FROM cursosasignados JOIN cursos ON ClaveCurso = Clave JOIN horarios ON  cursosasignados.IdHorario = horarios.id JOIN profesor ON cursosasignados.NominaProfe = profesor.Nomina
+	WHERE profesor.nomina = variable 
+	ORDER BY profesor.nomina ASC
+
+Procedimiento:SP_PuedeDar (Materias Que Puede Dar)
+	SELECT clavecurso AS 'Clave', cursos.Nombre
+	FROM puedeimpartir JOIN cursos ON puedeimpartir.clavecurso = cursos.clave
+	WHERE nominaprofe = variable
+
+Procedimiento:SP_PrefiereDar(Materias Que Prefiere Dar)
+	SELECT clavecurso AS 'Clave', cursos.Nombre
+	FROM prefiereimpartir JOIN cursos ON prefiereimpartir.clavecurso = cursos.clave
+	WHERE nominaprofe = variable
+
+
+
+
+Reporte004: Alumnos Historial
+Input: No Aplica
+Output: Regresa el total de alumnos, y todos los grupos totales que ha habia de una materia y cuantos alumnos la han llevado
+
+Procedimiento:SP_AlumnosTotales_Historial (Total De Alumnos)
+	SELECT SUM(poblacion) AS `Alumnos`
+	FROM cursosasignados
+
+Procedimiento:SP_TodasLasMateriasConAlumnosTotales_Historial (Materias Con Historal de Alumnos)
+	SELECT clavecurso AS `Clave Del Curso`,cursos.Nombre,COUNT(cursos.Nombre) AS `Grupos Totales`, SUM(poblacion) AS `Alumnos`
+	FROM cursosasignados JOIN cursos ON clavecurso = clave 
+	GROUP BY cursos.Nombre
+	HAVING  SUM(poblacion) > 0
+	ORDER BY SUM(poblacion) DESC
+
+
+
+
+Reporte005: Profesor Inspirador
+Input: Nomina del profesor a buscar
+Output: Regresa el promedio de profesor inspirador, promedio de reto intelectual, promedio de guia de aprendizaje, promedio de recomendación y los grupos que ha dado con resultados de ecoas
+
+Procedimiento:SP_ProfesorInspirador (Nivel De Profesor Inspirador)
+	SELECT ROUND(AVG(ecoa5+ecoa6+ecoa7)/3 , 2) AS 'Promedio'
+	FROM cursosasignados
+	WHERE nominaprofe = variable
+
+Procedimiento:SP_NivelDeRetoIntelectual (Nivel De Reto Intelectual)
+	SELECT ROUND(AVG(Ecoa5),2) AS 'Promedio', ROUND(STD(ecoa5),2) AS 'Desviacion Estandar', MAX(ecoa5) AS 'Maximo', MIN(ecoa5) AS 'Minimo'
+	FROM cursosasignados
+	WHERE nominaprofe = variable
+
+Procedimiento:SP_GuiaDeAprendizaje (Nivel De Guia De Aprendizaje)
+	SELECT ROUND(AVG(Ecoa6),2) AS 'Promedio', ROUND(STD(ecoa6),2) AS 'Desviacion Estandar', MAX(ecoa6) AS 'Maximo', MIN(ecoa6) AS 'Minimo'
+	FROM cursosasignados
+	WHERE nominaprofe = variable
+
+Procedimiento:SP_RecomendacionDelProfesor (Nivel De Recomendacion Del Profesor)
+	SELECT ROUND(AVG(Ecoa7),2) AS 'Promedio', ROUND(STD(ecoa7),2) AS 'Desviacion Estandar', MAX(ecoa7) AS 'Maximo', MIN(ecoa7) AS 'Minimo'
+	FROM cursosasignados
+	WHERE nominaprofe = variable
+
+Procedimiento:SP_MateriasQueHaDadoUnProfesor (Materias Que Ha Dado)
+	SELECT cursosasignados.ClaveCurso AS 'Clave',cursos.Nombre AS Curso ,horarios.Horario,cursosasignados.Poblacion,cursosasignados.CRN, semestreinicia AS 'Inicio Semestre',semestretermina AS 'Termino de Semestre',aniosemestre AS 'Año', Ecoa5, Ecoa6, Ecoa7
+	FROM cursosasignados JOIN cursos ON ClaveCurso = Clave JOIN horarios ON  cursosasignados.IdHorario = horarios.id JOIN profesor ON cursosasignados.NominaProfe = profesor.Nomina
+	WHERE profesor.nomina = variable 
+	ORDER BY profesor.nomina ASC
+
